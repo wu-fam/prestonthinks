@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="128" height="128" shape-rendering="crispEdges">
+  <!-- Top hat -->
+  <rect x="5" y="0" width="6" height="1" fill="#2d2d44"/>
+  <rect x="4" y="1" width="8" height="1" fill="#2d2d44"/>
+  <rect x="6" y="2" width="4" height="3" fill="#2d2d44"/>
+  <rect x="5" y="2" width="1" height="3" fill="#3d3d5c"/>
+  <!-- Hat band -->
+  <rect x="5" y="4" width="6" height="1" fill="#c92a2a"/>
+  <!-- Face -->
+  <rect x="4" y="5" width="8" height="6" fill="#e8a0bf"/>
+  <rect x="3" y="6" width="1" height="4" fill="#e8a0bf"/>
+  <rect x="12" y="6" width="1" height="4" fill="#e8a0bf"/>
+  <!-- Eyes -->
+  <rect x="5" y="7" width="2" height="2" fill="#fff"/>
+  <rect x="9" y="7" width="2" height="2" fill="#fff"/>
+  <rect x="6" y="7" width="1" height="2" fill="#1a1a2e"/>
+  <rect x="10" y="7" width="1" height="2" fill="#1a1a2e"/>
+  <!-- Eyebrows (raised, sneaky) -->
+  <rect x="5" y="6" width="2" height="1" fill="#2d2d44"/>
+  <rect x="9" y="6" width="2" height="1" fill="#2d2d44"/>
+  <!-- Smirk -->
+  <rect x="6" y="10" width="1" height="1" fill="#c92a2a"/>
+  <rect x="7" y="10" width="3" height="1" fill="#c92a2a"/>
+  <rect x="10" y="9" width="1" height="1" fill="#c92a2a"/>
+  <!-- Monocle -->
+  <rect x="8" y="7" width="1" height="1" fill="#ffd43b"/>
+  <rect x="9" y="6" width="1" height="1" fill="#ffd43b"/>
+  <rect x="11" y="6" width="1" height="1" fill="#ffd43b"/>
+  <rect x="8" y="9" width="1" height="1" fill="#ffd43b"/>
+  <rect x="11" y="9" width="1" height="1" fill="#ffd43b"/>
+  <rect x="12" y="7" width="1" height="2" fill="#ffd43b"/>
+  <!-- Monocle chain -->
+  <rect x="12" y="9" width="1" height="1" fill="#ffd43b"/>
+  <rect x="12" y="10" width="1" height="1" fill="#ffd43b"/>
+  <!-- Body / collar -->
+  <rect x="4" y="11" width="8" height="2" fill="#2d2d44"/>
+  <rect x="3" y="12" width="1" height="2" fill="#2d2d44"/>
+  <rect x="12" y="12" width="1" height="2" fill="#2d2d44"/>
+  <!-- Tie -->
+  <rect x="7" y="11" width="2" height="1" fill="#c92a2a"/>
+  <rect x="7" y="12" width="2" height="2" fill="#c92a2a"/>
+  <!-- Body lower -->
+  <rect x="4" y="13" width="8" height="2" fill="#3d3d5c"/>
+  <rect x="3" y="14" width="1" height="1" fill="#3d3d5c"/>
+  <rect x="12" y="14" width="1" height="1" fill="#3d3d5c"/>
+  <!-- Feet -->
+  <rect x="4" y="15" width="3" height="1" fill="#1a1a2e"/>
+  <rect x="9" y="15" width="3" height="1" fill="#1a1a2e"/>
+</svg>

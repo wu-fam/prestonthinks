@@ -1,0 +1,361 @@
+/* Boss Fight Game — all styles scoped under #game */
+
+#game {
+  background: #1a1a2e;
+  color: #e0e0e0;
+  font-family: 'Courier New', Courier, monospace;
+  border-radius: 8px;
+  min-height: 480px;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ---------- Intro screen ---------- */
+
+#game .screen-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+#game .boss-name {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #ff6b6b;
+  margin: 0;
+}
+
+#game .boss-portrait {
+  margin: 0.5rem 0;
+}
+
+#game .boss-portrait img {
+  width: 128px;
+  height: 128px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+#game .boss-flavor {
+  font-style: italic;
+  color: #aaa;
+  font-size: 0.95rem;
+  max-width: 320px;
+}
+
+/* ---------- Name input ---------- */
+
+#game .name-input {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+#game .name-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #aaa;
+}
+
+#game .name-field {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.1rem;
+  text-align: center;
+  background: #16213e;
+  color: #fff;
+  border: 2px solid #0f3460;
+  border-radius: 4px;
+  padding: 0.5rem 0.8rem;
+  width: 160px;
+  outline: none;
+}
+
+#game .name-field:focus {
+  border-color: #4dabf7;
+}
+
+/* ---------- Fight screen ---------- */
+
+#game .screen-fight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+#game .fight-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+#game .fight-top .boss-portrait img {
+  width: 96px;
+  height: 96px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+#game .health-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+#game .health-bar {
+  width: 100%;
+}
+
+#game .health-bar-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.2rem;
+  text-align: left;
+}
+
+#game .health-bar-track {
+  width: 100%;
+  height: 20px;
+  background: #333;
+  border: 2px solid #555;
+  position: relative;
+  overflow: hidden;
+}
+
+#game .health-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+#game .health-bar.player .health-bar-fill {
+  background: #51cf66;
+}
+
+#game .health-bar.boss .health-bar-fill {
+  background: #ff6b6b;
+}
+
+#game .equation-area {
+  background: #16213e;
+  border: 2px solid #0f3460;
+  border-radius: 4px;
+  padding: 1.2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#game .equation-text {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #fff;
+  margin: 0 0 0.5rem;
+}
+
+#game .boss-speech {
+  color: #ff6b6b;
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+#game .answer-buttons {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+/* ---------- Buttons ---------- */
+
+#game .btn {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.1rem;
+  font-weight: bold;
+  padding: 0.8rem 1.5rem;
+  border: 3px solid;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: filter 0.1s;
+  background: none;
+  color: #fff;
+}
+
+#game .btn:hover {
+  filter: brightness(1.2);
+}
+
+#game .btn:active {
+  transform: translateY(1px);
+}
+
+#game .btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  filter: none;
+  transform: none;
+}
+
+#game .btn-true {
+  background: #2b8a3e;
+  border-color: #51cf66;
+  flex: 1;
+}
+
+#game .btn-false {
+  background: #c92a2a;
+  border-color: #ff6b6b;
+  flex: 1;
+}
+
+#game .btn-action {
+  background: #1864ab;
+  border-color: #4dabf7;
+  min-width: 160px;
+}
+
+/* ---------- Feedback overlay ---------- */
+
+#game .feedback-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#game .feedback-text {
+  font-size: 3rem;
+  font-weight: bold;
+  animation: feedbackFadeUp 0.8s ease-out forwards;
+}
+
+#game .feedback-text.hit {
+  color: #51cf66;
+}
+
+#game .feedback-text.miss {
+  color: #ff6b6b;
+}
+
+#game .feedback-text.correct-answer {
+  font-size: 1.2rem;
+  color: #aaa;
+  animation: feedbackFadeUp 1.2s ease-out forwards;
+}
+
+/* ---------- Win / Lose screens ---------- */
+
+#game .screen-win,
+#game .screen-lose {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+#game .result-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+#game .screen-win .result-title {
+  color: #51cf66;
+}
+
+#game .screen-lose .result-title {
+  color: #ff6b6b;
+}
+
+#game .result-text {
+  color: #aaa;
+  font-size: 1rem;
+  max-width: 300px;
+}
+
+/* ---------- Animations ---------- */
+
+@keyframes feedbackFadeUp {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+#game.shake {
+  animation: shake 0.3s ease;
+}
+
+@keyframes damageFlash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+#game .flash {
+  animation: damageFlash 0.15s ease 3;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 480px) {
+  #game {
+    padding: 1.2rem 1rem;
+    min-height: 400px;
+  }
+
+  #game .fight-top {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #game .fight-top .boss-portrait img {
+    width: 80px;
+    height: 80px;
+  }
+
+  #game .equation-text {
+    font-size: 1.3rem;
+  }
+
+  #game .btn {
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+  }
+
+  #game .boss-name {
+    font-size: 1.4rem;
+  }
+}

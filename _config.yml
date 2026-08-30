@@ -3,4 +3,5 @@ description: Math explainers and more
 theme: minima
 
 header_pages:
+  - game.html
   - about.md
