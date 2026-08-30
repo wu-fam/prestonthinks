@@ -7,6 +7,8 @@
   var BOSS_DAMAGE = 1;
   var LIE_CHANCE = 0.5;
   var FEEDBACK_DELAY = 900;
+  var QUESTION_TIME = 10;
+  var FIGHT_TIME = 90;
 
   var BOSSES = [
     {
@@ -97,6 +99,72 @@
     };
   }
 
+  function clearTimers() {
+    if (state.questionInterval) clearInterval(state.questionInterval);
+    if (state.fightInterval) clearInterval(state.fightInterval);
+    state.questionInterval = null;
+    state.fightInterval = null;
+  }
+
+  function startFightTimer() {
+    state.fightTimeLeft = FIGHT_TIME;
+    state.fightInterval = setInterval(function () {
+      state.fightTimeLeft--;
+      updateTimerDisplay();
+      if (state.fightTimeLeft <= 0) {
+        clearTimers();
+        state.screen = 'LOSE';
+        render();
+      }
+    }, 1000);
+  }
+
+  function startQuestionTimer() {
+    state.questionTimeLeft = QUESTION_TIME;
+    if (state.questionInterval) clearInterval(state.questionInterval);
+    state.questionInterval = setInterval(function () {
+      state.questionTimeLeft--;
+      updateTimerDisplay();
+      if (state.questionTimeLeft <= 0) {
+        clearInterval(state.questionInterval);
+        state.questionInterval = null;
+        questionTimeout();
+      }
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    var qEl = container.querySelector('.question-timer-fill');
+    var fEl = container.querySelector('.fight-timer-text');
+    if (qEl) qEl.style.width = Math.max(0, (state.questionTimeLeft / QUESTION_TIME) * 100) + '%';
+    if (fEl) {
+      var m = Math.floor(state.fightTimeLeft / 60);
+      var s = state.fightTimeLeft % 60;
+      fEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+      if (state.fightTimeLeft <= 10) fEl.classList.add('urgent');
+      else fEl.classList.remove('urgent');
+    }
+  }
+
+  function questionTimeout() {
+    if (state.resolving || state.screen !== 'FIGHT') return;
+    state.resolving = true;
+    state.playerHP = Math.max(0, state.playerHP - BOSS_DAMAGE);
+    showFeedback('timeout');
+    render();
+    setTimeout(function () {
+      state.resolving = false;
+      if (state.playerHP <= 0) {
+        clearTimers();
+        state.screen = 'LOSE';
+      } else {
+        generateRound();
+        startQuestionTimer();
+      }
+      render();
+    }, FEEDBACK_DELAY);
+  }
+
   function resetGame() {
     state = {
       screen: 'SELECT',
@@ -105,6 +173,10 @@
       bossHP: BOSS_MAX_HP,
       currentRound: null,
       resolving: false,
+      questionTimeLeft: QUESTION_TIME,
+      fightTimeLeft: FIGHT_TIME,
+      questionInterval: null,
+      fightInterval: null,
     };
   }
 
@@ -184,8 +256,16 @@
   function renderFight() {
     var r = state.currentRound;
     var boss = state.currentBoss;
+    var fm = Math.floor(state.fightTimeLeft / 60);
+    var fs = state.fightTimeLeft % 60;
+    var fightTimeStr = fm + ':' + (fs < 10 ? '0' : '') + fs;
+    var urgentClass = state.fightTimeLeft <= 10 ? ' urgent' : '';
+    var qPct = Math.max(0, (state.questionTimeLeft / QUESTION_TIME) * 100);
     return (
       '<div class="screen-fight">' +
+        '<div class="fight-timer">' +
+          '<span class="fight-timer-text' + urgentClass + '">' + fightTimeStr + '</span>' +
+        '</div>' +
         '<div class="fight-top">' +
           '<div class="boss-portrait"><img src="' + boss.portrait + '" alt="' + escapeHtml(boss.name) + '"></div>' +
           '<div class="health-bars">' +
@@ -194,6 +274,7 @@
           '</div>' +
         '</div>' +
         '<div class="equation-area">' +
+          '<div class="question-timer-track"><div class="question-timer-fill" style="width:' + qPct + '%"></div></div>' +
           '<p class="equation-text">' + r.expr + ' = ' + r.displayedAnswer + '</p>' +
           '<p class="boss-speech">"' + r.taunt + '"</p>' +
         '</div>' +
@@ -219,11 +300,14 @@
 
   function renderLose() {
     var boss = state.currentBoss;
+    var msg = state.fightTimeLeft <= 0
+      ? 'Time ran out! ' + escapeHtml(boss.name) + ' wins.'
+      : escapeHtml(boss.name) + ' fooled you. The correct answer was ' + state.currentRound.correctAnswer + '.';
     return (
       '<div class="screen-lose">' +
         '<p class="result-title">Defeated!</p>' +
         '<div class="boss-portrait"><img src="' + boss.portrait + '" alt="' + escapeHtml(boss.name) + '"></div>' +
-        '<p class="result-text">' + escapeHtml(boss.name) + ' fooled you. The correct answer was ' + state.currentRound.correctAnswer + '.</p>' +
+        '<p class="result-text">' + msg + '</p>' +
         '<button class="btn btn-action" data-action="try-again">Try Again</button>' +
       '</div>'
     );
@@ -244,7 +328,8 @@
   function showFeedback(type) {
     var overlay = document.createElement('div');
     overlay.className = 'feedback-overlay';
-    var label = type === 'hit' ? 'HIT!' : 'MISS!';
+    var labels = { hit: 'HIT!', miss: 'MISS!', timeout: 'TOO SLOW!' };
+    var label = labels[type] || 'MISS!';
     overlay.innerHTML =
       '<div class="feedback-text ' + type + '">' + label + '</div>';
     container.appendChild(overlay);
@@ -260,6 +345,8 @@
   function resolveAnswer(playerSaidTrue) {
     if (state.resolving) return;
     state.resolving = true;
+    if (state.questionInterval) clearInterval(state.questionInterval);
+    state.questionInterval = null;
     render();
 
     var r = state.currentRound;
@@ -278,12 +365,15 @@
     setTimeout(function () {
       state.resolving = false;
       if (state.bossHP <= 0) {
+        clearTimers();
         state.screen = 'WIN';
         try { localStorage.setItem(state.currentBoss.storageKey, 'defeated'); } catch (e) {}
       } else if (state.playerHP <= 0) {
+        clearTimers();
         state.screen = 'LOSE';
       } else {
         generateRound();
+        startQuestionTimer();
       }
       render();
     }, FEEDBACK_DELAY);
@@ -317,9 +407,12 @@
         state.screen = 'FIGHT';
         generateRound();
         render();
+        startFightTimer();
+        startQuestionTimer();
         break;
       case 'try-again':
       case 'play-again':
+        clearTimers();
         resetGame();
         render();
         break;
