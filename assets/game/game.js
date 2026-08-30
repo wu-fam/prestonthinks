@@ -120,13 +120,18 @@
     );
   }
 
+  function isBossDefeated(b) {
+    try { return localStorage.getItem(b.storageKey) === 'defeated'; } catch (e) { return false; }
+  }
+
   function renderSelect() {
     var cards = '';
+    var allPriorDefeated = true;
     for (var i = 0; i < BOSSES.length; i++) {
       var b = BOSSES[i];
-      var defeated = false;
-      try { defeated = localStorage.getItem(b.storageKey) === 'defeated'; } catch (e) {}
-      if (b.locked) {
+      var defeated = isBossDefeated(b);
+      var locked = b.locked || !allPriorDefeated;
+      if (locked) {
         cards +=
           '<div class="boss-card locked">' +
             '<div class="boss-card-portrait"><div class="locked-silhouette">?</div></div>' +
@@ -142,6 +147,7 @@
             badge +
           '</div>';
       }
+      if (!b.locked && !defeated) allPriorDefeated = false;
     }
     return (
       '<div class="screen-select">' +
