@@ -8,18 +8,29 @@
   var LIE_CHANCE = 0.5;
   var FEEDBACK_DELAY = 900;
 
-  var BOSS = {
-    name: 'Captain Bluff',
-    flavor: '"Every answer I give is correct. Would I lie to you?"',
-    storageKey: 'boss-captain-bluff',
-    taunts: [
-      'This is definitely correct!',
-      'Trust me, I did the math.',
-      'Would I lie to you?',
-      "I'm 100% sure about this one.",
-      'Easy. Obviously right.',
-    ],
-  };
+  var BOSSES = [
+    {
+      name: 'Captain Bluff',
+      flavor: '"Every answer I give is correct. Would I lie to you?"',
+      storageKey: 'boss-captain-bluff',
+      portrait: '/assets/game/liar-boss.svg',
+      taunts: [
+        'This is definitely correct!',
+        'Trust me, I did the math.',
+        'Would I lie to you?',
+        "I'm 100% sure about this one.",
+        'Easy. Obviously right.',
+      ],
+    },
+    {
+      name: '???',
+      flavor: 'A mysterious challenger awaits...',
+      storageKey: 'boss-locked-placeholder',
+      portrait: '/assets/game/liar-boss.svg',
+      locked: true,
+      taunts: [],
+    },
+  ];
 
   var EQUATIONS = [
     { expr: '7 × 8', answer: 56 },
@@ -82,13 +93,14 @@
       correctAnswer: eq.answer,
       displayedAnswer: displayed,
       lying: lying,
-      taunt: pickRandom(BOSS.taunts),
+      taunt: pickRandom(state.currentBoss.taunts),
     };
   }
 
   function resetGame() {
     state = {
-      screen: 'INTRO',
+      screen: 'SELECT',
+      currentBoss: null,
       playerHP: PLAYER_MAX_HP,
       bossHP: BOSS_MAX_HP,
       currentRound: null,
@@ -108,33 +120,70 @@
     );
   }
 
+  function renderSelect() {
+    var cards = '';
+    for (var i = 0; i < BOSSES.length; i++) {
+      var b = BOSSES[i];
+      var defeated = false;
+      try { defeated = localStorage.getItem(b.storageKey) === 'defeated'; } catch (e) {}
+      if (b.locked) {
+        cards +=
+          '<div class="boss-card locked">' +
+            '<div class="boss-card-portrait"><div class="locked-silhouette">?</div></div>' +
+            '<p class="boss-card-name">' + escapeHtml(b.name) + '</p>' +
+            '<p class="boss-card-badge locked-badge">&#x1F512;</p>' +
+          '</div>';
+      } else {
+        var badge = defeated ? '<p class="boss-card-badge defeated-badge">&#x2714;</p>' : '';
+        cards +=
+          '<div class="boss-card" data-action="select-boss" data-boss="' + i + '">' +
+            '<div class="boss-card-portrait"><img src="' + b.portrait + '" alt="' + escapeHtml(b.name) + '"></div>' +
+            '<p class="boss-card-name">' + escapeHtml(b.name) + '</p>' +
+            badge +
+          '</div>';
+      }
+    }
+    return (
+      '<div class="screen-select">' +
+        '<h2 class="select-title">Choose Your Battle</h2>' +
+        '<div class="boss-grid">' + cards + '</div>' +
+      '</div>'
+    );
+  }
+
   function renderIntro() {
-    var defeated = localStorage.getItem(BOSS.storageKey) === 'defeated';
+    var boss = state.currentBoss;
+    var defeated = false;
+    try { defeated = localStorage.getItem(boss.storageKey) === 'defeated'; } catch (e) {}
     var badge = defeated ? '<p style="color:#51cf66;font-size:0.85rem;">&#x2714; Defeated</p>' : '';
     var savedName = getPlayerName();
     return (
       '<div class="screen-intro">' +
-        '<h2 class="boss-name">' + BOSS.name + '</h2>' +
-        '<div class="boss-portrait"><img src="/assets/game/liar-boss.svg" alt="' + BOSS.name + '"></div>' +
+        '<h2 class="boss-name">' + escapeHtml(boss.name) + '</h2>' +
+        '<div class="boss-portrait"><img src="' + boss.portrait + '" alt="' + escapeHtml(boss.name) + '"></div>' +
         badge +
-        '<p class="boss-flavor">' + BOSS.flavor + '</p>' +
+        '<p class="boss-flavor">' + boss.flavor + '</p>' +
         '<div class="name-input">' +
           '<label class="name-label" for="player-name">Your name</label>' +
           '<input id="player-name" class="name-field" type="text" maxlength="12" placeholder="Player" value="' + escapeHtml(savedName) + '">' +
         '</div>' +
-        '<button class="btn btn-action" data-action="start-fight">Fight!</button>' +
+        '<div class="intro-buttons">' +
+          '<button class="btn btn-back" data-action="back-to-select">Back</button>' +
+          '<button class="btn btn-action" data-action="start-fight">Fight!</button>' +
+        '</div>' +
       '</div>'
     );
   }
 
   function renderFight() {
     var r = state.currentRound;
+    var boss = state.currentBoss;
     return (
       '<div class="screen-fight">' +
         '<div class="fight-top">' +
-          '<div class="boss-portrait"><img src="/assets/game/liar-boss.svg" alt="' + BOSS.name + '"></div>' +
+          '<div class="boss-portrait"><img src="' + boss.portrait + '" alt="' + escapeHtml(boss.name) + '"></div>' +
           '<div class="health-bars">' +
-            healthBar(state.bossHP, BOSS_MAX_HP, BOSS.name, 'boss') +
+            healthBar(state.bossHP, BOSS_MAX_HP, boss.name, 'boss') +
             healthBar(state.playerHP, PLAYER_MAX_HP, state.playerName, 'player') +
           '</div>' +
         '</div>' +
@@ -151,22 +200,24 @@
   }
 
   function renderWin() {
+    var boss = state.currentBoss;
     return (
       '<div class="screen-win">' +
         '<p class="result-title">You Win!</p>' +
-        '<div class="boss-portrait"><img src="/assets/game/liar-boss.svg" alt="' + BOSS.name + '" style="opacity:0.4"></div>' +
-        '<p class="result-text">' + BOSS.name + ' has been defeated. No more lies!</p>' +
+        '<div class="boss-portrait"><img src="' + boss.portrait + '" alt="' + escapeHtml(boss.name) + '" style="opacity:0.4"></div>' +
+        '<p class="result-text">' + escapeHtml(boss.name) + ' has been defeated. No more lies!</p>' +
         '<button class="btn btn-action" data-action="play-again">Play Again</button>' +
       '</div>'
     );
   }
 
   function renderLose() {
+    var boss = state.currentBoss;
     return (
       '<div class="screen-lose">' +
         '<p class="result-title">Defeated!</p>' +
-        '<div class="boss-portrait"><img src="/assets/game/liar-boss.svg" alt="' + BOSS.name + '"></div>' +
-        '<p class="result-text">' + BOSS.name + ' fooled you. The correct answer was ' + state.currentRound.correctAnswer + '.</p>' +
+        '<div class="boss-portrait"><img src="' + boss.portrait + '" alt="' + escapeHtml(boss.name) + '"></div>' +
+        '<p class="result-text">' + escapeHtml(boss.name) + ' fooled you. The correct answer was ' + state.currentRound.correctAnswer + '.</p>' +
         '<button class="btn btn-action" data-action="try-again">Try Again</button>' +
       '</div>'
     );
@@ -175,10 +226,11 @@
   function render() {
     var html;
     switch (state.screen) {
-      case 'INTRO': html = renderIntro(); break;
-      case 'FIGHT': html = renderFight(); break;
-      case 'WIN':   html = renderWin();   break;
-      case 'LOSE':  html = renderLose();  break;
+      case 'SELECT': html = renderSelect(); break;
+      case 'INTRO':  html = renderIntro();  break;
+      case 'FIGHT':  html = renderFight();  break;
+      case 'WIN':    html = renderWin();    break;
+      case 'LOSE':   html = renderLose();   break;
     }
     container.innerHTML = html;
   }
@@ -221,7 +273,7 @@
       state.resolving = false;
       if (state.bossHP <= 0) {
         state.screen = 'WIN';
-        try { localStorage.setItem(BOSS.storageKey, 'defeated'); } catch (e) {}
+        try { localStorage.setItem(state.currentBoss.storageKey, 'defeated'); } catch (e) {}
       } else if (state.playerHP <= 0) {
         state.screen = 'LOSE';
       } else {
@@ -237,11 +289,24 @@
 
     var action = btn.getAttribute('data-action');
     switch (action) {
+      case 'select-boss':
+        var idx = parseInt(btn.getAttribute('data-boss'), 10);
+        var boss = BOSSES[idx];
+        if (!boss || boss.locked) break;
+        state.currentBoss = boss;
+        state.screen = 'INTRO';
+        render();
+        break;
+      case 'back-to-select':
+        state.screen = 'SELECT';
+        render();
+        break;
       case 'start-fight':
         var nameInput = document.getElementById('player-name');
         var name = (nameInput ? nameInput.value.trim() : '') || 'Player';
         savePlayerName(name);
-        resetGame();
+        state.playerHP = PLAYER_MAX_HP;
+        state.bossHP = BOSS_MAX_HP;
         state.playerName = name;
         state.screen = 'FIGHT';
         generateRound();
@@ -250,9 +315,6 @@
       case 'try-again':
       case 'play-again':
         resetGame();
-        state.playerName = getPlayerName() || 'Player';
-        state.screen = 'FIGHT';
-        generateRound();
         render();
         break;
       case 'answer-true':

@@ -17,6 +17,99 @@
   box-sizing: border-box;
 }
 
+/* ---------- Select screen ---------- */
+
+#game .screen-select {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+#game .select-title {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #4dabf7;
+  margin: 0;
+}
+
+#game .boss-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  max-width: 360px;
+}
+
+#game .boss-card {
+  background: #16213e;
+  border: 2px solid #0f3460;
+  border-radius: 6px;
+  padding: 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+}
+
+#game .boss-card:hover {
+  border-color: #4dabf7;
+  transform: translateY(-2px);
+}
+
+#game .boss-card.locked {
+  opacity: 0.4;
+  cursor: default;
+}
+
+#game .boss-card.locked:hover {
+  border-color: #0f3460;
+  transform: none;
+}
+
+#game .boss-card-portrait img {
+  width: 80px;
+  height: 80px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+#game .boss-card-name {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #e0e0e0;
+  margin: 0;
+}
+
+#game .boss-card-badge {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+#game .boss-card-badge.defeated-badge {
+  color: #51cf66;
+}
+
+#game .boss-card-badge.locked-badge {
+  font-size: 1.2rem;
+}
+
+#game .locked-silhouette {
+  width: 80px;
+  height: 80px;
+  background: #0f1a2e;
+  border: 2px solid #333;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #555;
+}
+
 /* ---------- Intro screen ---------- */
 
 #game .screen-intro {
@@ -82,6 +175,25 @@
 
 #game .name-field:focus {
   border-color: #4dabf7;
+}
+
+#game .intro-buttons {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+#game .btn-back {
+  background: none;
+  border-color: #555;
+  color: #aaa;
+  min-width: auto;
+  padding: 0.8rem 1rem;
+}
+
+#game .btn-back:hover {
+  border-color: #888;
+  color: #fff;
 }
 
 /* ---------- Fight screen ---------- */
