@@ -258,12 +258,6 @@
   color: #ff6b6b;
 }
 
-#game .feedback-text.correct-answer {
-  font-size: 1.2rem;
-  color: #aaa;
-  animation: feedbackFadeUp 1.2s ease-out forwards;
-}
-
 /* ---------- Win / Lose screens ---------- */
 
 #game .screen-win,

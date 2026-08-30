@@ -57,6 +57,10 @@
     try { localStorage.setItem(PLAYER_NAME_KEY, name); } catch (e) {}
   }
 
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   function pickRandom(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
   }
@@ -96,7 +100,7 @@
     var pct = Math.max(0, (current / max) * 100);
     return (
       '<div class="health-bar ' + type + '">' +
-        '<div class="health-bar-label">' + label + ' ' + current + '/' + max + '</div>' +
+        '<div class="health-bar-label">' + escapeHtml(label) + ' ' + current + '/' + max + '</div>' +
         '<div class="health-bar-track">' +
           '<div class="health-bar-fill" style="width:' + pct + '%"></div>' +
         '</div>' +
@@ -116,7 +120,7 @@
         '<p class="boss-flavor">' + BOSS.flavor + '</p>' +
         '<div class="name-input">' +
           '<label class="name-label" for="player-name">Your name</label>' +
-          '<input id="player-name" class="name-field" type="text" maxlength="12" placeholder="Player" value="' + savedName + '">' +
+          '<input id="player-name" class="name-field" type="text" maxlength="12" placeholder="Player" value="' + escapeHtml(savedName) + '">' +
         '</div>' +
         '<button class="btn btn-action" data-action="start-fight">Fight!</button>' +
       '</div>'
@@ -179,7 +183,7 @@
     container.innerHTML = html;
   }
 
-  function showFeedback(type, extra) {
+  function showFeedback(type) {
     var overlay = document.createElement('div');
     overlay.className = 'feedback-overlay';
     var label = type === 'hit' ? 'HIT!' : 'MISS!';
