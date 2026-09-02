@@ -8,7 +8,7 @@
   var LIE_CHANCE = 0.5;
   var FEEDBACK_DELAY = 900;
   var QUESTION_TIME = 10;
-  var FIGHT_TIME = 90;
+  var FIGHT_TIME = 60;
 
   var BOSSES = [
     {
