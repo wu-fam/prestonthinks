@@ -38,7 +38,7 @@
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 1rem;
   width: 100%;
-  max-width: 360px;
+  max-width: 500px;
 }
 
 #game .boss-card {
@@ -336,6 +336,19 @@
   display: flex;
   gap: 1rem;
   width: 100%;
+}
+
+#game .answer-buttons.choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+#game .btn-choice {
+  background: #1864ab;
+  border-color: #4dabf7;
+  font-size: 1rem;
+  padding: 0.7rem 0.5rem;
 }
 
 /* ---------- Buttons ---------- */

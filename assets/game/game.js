@@ -16,6 +16,7 @@
       flavor: '"Every answer I give is correct. Would I lie to you?"',
       storageKey: 'boss-captain-bluff',
       portrait: '/assets/game/liar-boss.svg',
+      mechanic: 'bluff',
       taunts: [
         'This is definitely correct!',
         'Trust me, I did the math.',
@@ -25,12 +26,32 @@
       ],
     },
     {
-      name: '???',
-      flavor: 'A mysterious challenger awaits...',
-      storageKey: 'boss-locked-placeholder',
-      portrait: '/assets/game/liar-boss.svg',
-      locked: true,
-      taunts: [],
+      name: 'The Splitter',
+      flavor: '"I\'ll break every number in half. Can you put them back together?"',
+      storageKey: 'boss-the-splitter',
+      portrait: '/assets/game/splitter-boss.svg',
+      mechanic: 'factor',
+      taunts: [
+        'Split this!',
+        'Too many pieces for you!',
+        'Can you even multiply?',
+        'This one is tricky...',
+        'CHOP CHOP!',
+      ],
+    },
+    {
+      name: 'The Sequencer',
+      flavor: '"My patterns are flawless. You will never keep up."',
+      storageKey: 'boss-the-sequencer',
+      portrait: '/assets/game/pattern-boss.svg',
+      mechanic: 'pattern',
+      taunts: [
+        'Follow the pattern... if you can.',
+        'CALCULATING your defeat.',
+        'My sequences are perfect.',
+        'ERROR: player skill not found.',
+        'Next number. BEEP BOOP.',
+      ],
     },
   ];
 
@@ -57,6 +78,44 @@
     { expr: '9 × 9', answer: 81 },
   ];
 
+  var FACTOR_PRODUCTS = [
+    { product: 36, a: 6, b: 6 },
+    { product: 42, a: 6, b: 7 },
+    { product: 48, a: 6, b: 8 },
+    { product: 54, a: 6, b: 9 },
+    { product: 56, a: 7, b: 8 },
+    { product: 63, a: 7, b: 9 },
+    { product: 72, a: 8, b: 9 },
+    { product: 81, a: 9, b: 9 },
+    { product: 45, a: 5, b: 9 },
+    { product: 40, a: 5, b: 8 },
+    { product: 35, a: 5, b: 7 },
+    { product: 24, a: 4, b: 6 },
+    { product: 32, a: 4, b: 8 },
+    { product: 28, a: 4, b: 7 },
+    { product: 64, a: 8, b: 8 },
+    { product: 27, a: 3, b: 9 },
+  ];
+
+  var PATTERNS = [
+    { seq: [2, 4, 6, 8], next: 10, rule: '+2' },
+    { seq: [5, 10, 15, 20], next: 25, rule: '+5' },
+    { seq: [3, 6, 9, 12], next: 15, rule: '+3' },
+    { seq: [7, 14, 21, 28], next: 35, rule: '+7' },
+    { seq: [10, 20, 30, 40], next: 50, rule: '+10' },
+    { seq: [2, 4, 8, 16], next: 32, rule: '×2' },
+    { seq: [3, 9, 27, 81], next: 243, rule: '×3' },
+    { seq: [1, 4, 16, 64], next: 256, rule: '×4' },
+    { seq: [100, 90, 80, 70], next: 60, rule: '-10' },
+    { seq: [50, 45, 40, 35], next: 30, rule: '-5' },
+    { seq: [1, 2, 4, 7], next: 11, rule: '+1,+2,+3,...' },
+    { seq: [2, 6, 12, 20], next: 30, rule: '+4,+6,+8,...' },
+    { seq: [1, 1, 2, 3], next: 5, rule: 'fib' },
+    { seq: [1, 3, 6, 10], next: 15, rule: 'triangular' },
+    { seq: [4, 8, 16, 32], next: 64, rule: '×2' },
+    { seq: [11, 22, 33, 44], next: 55, rule: '+11' },
+  ];
+
   var PLAYER_NAME_KEY = 'player-name';
 
   var state;
@@ -78,6 +137,15 @@
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
   function generateWrongAnswer(correct) {
     var offsets = [-3, -2, -1, 1, 2, 3];
     var offset = pickRandom(offsets);
@@ -86,17 +154,91 @@
     return wrong;
   }
 
-  function generateRound() {
+  function generateWrongFactorPair(correctA, correctB, product) {
+    var attempts = 0;
+    while (attempts < 20) {
+      var a = correctA + pickRandom([-2, -1, 1, 2]);
+      var b = correctB + pickRandom([-2, -1, 1, 2]);
+      if (a < 2) a = 2;
+      if (b < 2) b = 2;
+      if (a > b) { var tmp = a; a = b; b = tmp; }
+      if (a * b !== product) return { a: a, b: b };
+      attempts++;
+    }
+    return { a: correctA + 1, b: correctB + 1 };
+  }
+
+  function generateBluffRound() {
     var eq = pickRandom(EQUATIONS);
     var lying = Math.random() < LIE_CHANCE;
     var displayed = lying ? generateWrongAnswer(eq.answer) : eq.answer;
     state.currentRound = {
+      mechanic: 'bluff',
       expr: eq.expr,
       correctAnswer: eq.answer,
       displayedAnswer: displayed,
       lying: lying,
       taunt: pickRandom(state.currentBoss.taunts),
     };
+  }
+
+  function generateFactorRound() {
+    var fp = pickRandom(FACTOR_PRODUCTS);
+    var a = Math.min(fp.a, fp.b);
+    var b = Math.max(fp.a, fp.b);
+    var choices = [{ a: a, b: b, label: a + ' × ' + b }];
+    var used = {};
+    used[a + ',' + b] = true;
+    while (choices.length < 4) {
+      var wrong = generateWrongFactorPair(a, b, fp.product);
+      var wa = Math.min(wrong.a, wrong.b);
+      var wb = Math.max(wrong.a, wrong.b);
+      var key = wa + ',' + wb;
+      if (!used[key]) {
+        used[key] = true;
+        choices.push({ a: wa, b: wb, label: wa + ' × ' + wb });
+      }
+    }
+    choices = shuffle(choices);
+    var correctIdx = -1;
+    for (var i = 0; i < choices.length; i++) {
+      if (choices[i].a === a && choices[i].b === b) { correctIdx = i; break; }
+    }
+    state.currentRound = {
+      mechanic: 'factor',
+      prompt: 'What multiplies to make ' + fp.product + '?',
+      choices: choices.map(function (c) { return c.label; }),
+      correctIdx: correctIdx,
+      correctAnswer: a + ' × ' + b,
+      taunt: pickRandom(state.currentBoss.taunts),
+    };
+  }
+
+  function generatePatternRound() {
+    var p = pickRandom(PATTERNS);
+    var choices = [p.next];
+    while (choices.length < 4) {
+      var wrong = p.next + pickRandom([-5, -3, -2, -1, 1, 2, 3, 5]);
+      if (wrong <= 0) wrong = p.next + Math.abs(pickRandom([1, 2, 3, 5]));
+      if (choices.indexOf(wrong) === -1) choices.push(wrong);
+    }
+    choices = shuffle(choices);
+    var correctIdx = choices.indexOf(p.next);
+    state.currentRound = {
+      mechanic: 'pattern',
+      prompt: p.seq.join(', ') + ', ?',
+      choices: choices.map(function (c) { return '' + c; }),
+      correctIdx: correctIdx,
+      correctAnswer: p.next,
+      taunt: pickRandom(state.currentBoss.taunts),
+    };
+  }
+
+  function generateRound() {
+    var mechanic = state.currentBoss.mechanic;
+    if (mechanic === 'factor') generateFactorRound();
+    else if (mechanic === 'pattern') generatePatternRound();
+    else generateBluffRound();
   }
 
   function clearTimers() {
@@ -253,14 +395,52 @@
     );
   }
 
-  function renderFight() {
+  function renderAnswerButtons() {
     var r = state.currentRound;
+    var disabled = state.resolving ? ' disabled' : '';
+    if (r.mechanic === 'bluff') {
+      return (
+        '<div class="answer-buttons">' +
+          '<button class="btn btn-true" data-action="answer-true"' + disabled + '>True</button>' +
+          '<button class="btn btn-false" data-action="answer-false"' + disabled + '>False</button>' +
+        '</div>'
+      );
+    }
+    var html = '<div class="answer-buttons choice-grid">';
+    for (var i = 0; i < r.choices.length; i++) {
+      html += '<button class="btn btn-choice" data-action="answer-choice" data-choice="' + i + '"' + disabled + '>' + escapeHtml(r.choices[i]) + '</button>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderEquationArea() {
+    var r = state.currentRound;
+    var qPct = Math.max(0, (state.questionTimeLeft / QUESTION_TIME) * 100);
+    if (r.mechanic === 'bluff') {
+      return (
+        '<div class="equation-area">' +
+          '<div class="question-timer-track"><div class="question-timer-fill" style="width:' + qPct + '%"></div></div>' +
+          '<p class="equation-text">' + r.expr + ' = ' + r.displayedAnswer + '</p>' +
+          '<p class="boss-speech">"' + escapeHtml(r.taunt) + '"</p>' +
+        '</div>'
+      );
+    }
+    return (
+      '<div class="equation-area">' +
+        '<div class="question-timer-track"><div class="question-timer-fill" style="width:' + qPct + '%"></div></div>' +
+        '<p class="equation-text">' + escapeHtml(r.prompt) + '</p>' +
+        '<p class="boss-speech">"' + escapeHtml(r.taunt) + '"</p>' +
+      '</div>'
+    );
+  }
+
+  function renderFight() {
     var boss = state.currentBoss;
     var fm = Math.floor(state.fightTimeLeft / 60);
     var fs = state.fightTimeLeft % 60;
     var fightTimeStr = fm + ':' + (fs < 10 ? '0' : '') + fs;
     var urgentClass = state.fightTimeLeft <= 10 ? ' urgent' : '';
-    var qPct = Math.max(0, (state.questionTimeLeft / QUESTION_TIME) * 100);
     return (
       '<div class="screen-fight">' +
         '<div class="fight-timer">' +
@@ -273,26 +453,25 @@
             healthBar(state.playerHP, PLAYER_MAX_HP, state.playerName, 'player') +
           '</div>' +
         '</div>' +
-        '<div class="equation-area">' +
-          '<div class="question-timer-track"><div class="question-timer-fill" style="width:' + qPct + '%"></div></div>' +
-          '<p class="equation-text">' + r.expr + ' = ' + r.displayedAnswer + '</p>' +
-          '<p class="boss-speech">"' + r.taunt + '"</p>' +
-        '</div>' +
-        '<div class="answer-buttons">' +
-          '<button class="btn btn-true" data-action="answer-true"' + (state.resolving ? ' disabled' : '') + '>True</button>' +
-          '<button class="btn btn-false" data-action="answer-false"' + (state.resolving ? ' disabled' : '') + '>False</button>' +
-        '</div>' +
+        renderEquationArea() +
+        renderAnswerButtons() +
       '</div>'
     );
   }
 
   function renderWin() {
     var boss = state.currentBoss;
+    var msgs = {
+      bluff: ' has been defeated. No more lies!',
+      factor: ' has been defeated. Numbers stay whole!',
+      pattern: ' has been defeated. Sequence broken!',
+    };
+    var msg = escapeHtml(boss.name) + (msgs[boss.mechanic] || ' has been defeated!');
     return (
       '<div class="screen-win">' +
         '<p class="result-title">You Win!</p>' +
         '<div class="boss-portrait"><img src="' + boss.portrait + '" alt="' + escapeHtml(boss.name) + '" style="opacity:0.4"></div>' +
-        '<p class="result-text">' + escapeHtml(boss.name) + ' has been defeated. No more lies!</p>' +
+        '<p class="result-text">' + msg + '</p>' +
         '<button class="btn btn-action" data-action="play-again">Play Again</button>' +
       '</div>'
     );
@@ -300,9 +479,13 @@
 
   function renderLose() {
     var boss = state.currentBoss;
-    var msg = state.fightTimeLeft <= 0
-      ? 'Time ran out! ' + escapeHtml(boss.name) + ' wins.'
-      : escapeHtml(boss.name) + ' fooled you. The correct answer was ' + state.currentRound.correctAnswer + '.';
+    var r = state.currentRound;
+    var msg;
+    if (state.fightTimeLeft <= 0) {
+      msg = 'Time ran out! ' + escapeHtml(boss.name) + ' wins.';
+    } else {
+      msg = escapeHtml(boss.name) + ' got you! The answer was ' + r.correctAnswer + '.';
+    }
     return (
       '<div class="screen-lose">' +
         '<p class="result-title">Defeated!</p>' +
@@ -342,17 +525,21 @@
     }, 800);
   }
 
-  function resolveAnswer(playerSaidTrue) {
+  function resolveBluff(playerSaidTrue) {
+    var r = state.currentRound;
+    return (playerSaidTrue && !r.lying) || (!playerSaidTrue && r.lying);
+  }
+
+  function resolveChoice(choiceIdx) {
+    return choiceIdx === state.currentRound.correctIdx;
+  }
+
+  function resolveAnswer(correct) {
     if (state.resolving) return;
     state.resolving = true;
     if (state.questionInterval) clearInterval(state.questionInterval);
     state.questionInterval = null;
     render();
-
-    var r = state.currentRound;
-    var bossWasLying = r.lying;
-    var correct =
-      (playerSaidTrue && !bossWasLying) || (!playerSaidTrue && bossWasLying);
 
     if (correct) {
       state.bossHP = Math.max(0, state.bossHP - PLAYER_DAMAGE);
@@ -417,10 +604,14 @@
         render();
         break;
       case 'answer-true':
-        resolveAnswer(true);
+        resolveAnswer(resolveBluff(true));
         break;
       case 'answer-false':
-        resolveAnswer(false);
+        resolveAnswer(resolveBluff(false));
+        break;
+      case 'answer-choice':
+        var ci = parseInt(btn.getAttribute('data-choice'), 10);
+        resolveAnswer(resolveChoice(ci));
         break;
     }
   }
