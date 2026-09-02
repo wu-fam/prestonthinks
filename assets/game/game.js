@@ -26,9 +26,9 @@
       ],
     },
     {
-      name: 'The Splitter',
+      name: 'Viking Orc',
       flavor: '"I\'ll break every number in half. Can you put them back together?"',
-      storageKey: 'boss-the-splitter',
+      storageKey: 'boss-viking-orc',
       portrait: '/assets/game/splitter-boss.svg',
       mechanic: 'factor',
       taunts: [
@@ -40,17 +40,17 @@
       ],
     },
     {
-      name: 'The Sequencer',
-      flavor: '"My patterns are flawless. You will never keep up."',
-      storageKey: 'boss-the-sequencer',
+      name: 'Wizard Snake',
+      flavor: '"My patterns are flawlesssss. You will never keep up."',
+      storageKey: 'boss-wizard-snake',
       portrait: '/assets/game/pattern-boss.svg',
       mechanic: 'pattern',
       taunts: [
         'Follow the pattern... if you can.',
-        'CALCULATING your defeat.',
-        'My sequences are perfect.',
-        'ERROR: player skill not found.',
-        'Next number. BEEP BOOP.',
+        'Sssso predictable.',
+        'My sequencesss are perfect.',
+        'You will never keep up!',
+        'What comesss next?',
       ],
     },
   ];
@@ -463,8 +463,8 @@
     var boss = state.currentBoss;
     var msgs = {
       bluff: ' has been defeated. No more lies!',
-      factor: ' has been defeated. Numbers stay whole!',
-      pattern: ' has been defeated. Sequence broken!',
+      factor: ' has been defeated. No more chopping!',
+      pattern: ' has been defeated. Ssssequence broken!',
     };
     var msg = escapeHtml(boss.name) + (msgs[boss.mechanic] || ' has been defeated!');
     return (
