@@ -4,4 +4,5 @@ theme: minima
 
 header_pages:
   - game.html
+  - adventure.html
   - about.md

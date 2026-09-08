@@ -1,0 +1,29 @@
+#adventure {
+  background: #1a1a2e;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+#adventure canvas {
+  display: block;
+  border: 2px solid #0f3460;
+  border-radius: 4px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  max-width: 100%;
+  height: auto;
+  cursor: default;
+  outline: none;
+}
+
+#adventure .adventure-hint {
+  color: #888;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.8rem;
+  margin: 0;
+  text-align: center;
+}
