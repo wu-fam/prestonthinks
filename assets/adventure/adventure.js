@@ -29,59 +29,76 @@
     map: buildForestMap(),
     npcs: [
       {
-        x: 5, y: 27,
+        x: 19, y: 43,
         name: 'Old Sage',
         lines: [
           'Ah, a traveler! Welcome to the Enchanted Forest.',
           'An evil sorcerer has cast a shadow over our land.',
           'Solve the puzzle gates to prove your worth and advance.',
-          'Walk up to a gate and press Space to try the puzzle.',
+          'Walk up to a puzzle stone and press Space to try.',
         ],
       },
       {
-        x: 5, y: 15,
+        x: 8, y: 31,
         name: 'Forest Sprite',
         lines: [
-          'Psst! Need help with the puzzles?',
-          'Take your time. The gates accept numbers only.',
+          'Psst! This garden hides a secret.',
+          'The gates accept numbers only.',
           'Type your answer and press Enter to submit!',
         ],
       },
       {
-        x: 32, y: 15,
+        x: 33, y: 22,
+        name: 'Pond Keeper',
+        lines: [
+          'The water here once ran clear...',
+          'The sorcerer poisoned it with dark magic.',
+          'Solve the gates and maybe the forest can heal.',
+        ],
+      },
+      {
+        x: 24, y: 6,
         name: 'Gate Guardian',
         lines: [
-          'The sorcerer sealed these gates with arithmetic magic.',
-          'Only those who can solve them may pass.',
+          'You have come far, traveler.',
+          'One final challenge stands between you and the caves.',
+          'The sorcerer grows stronger. Prepare yourself.',
         ],
       },
     ],
     puzzles: [
       {
-        x: 19, y: 20, id: 'forest-gate-1',
+        x: 21, y: 38, id: 'forest-gate-1',
         question: 'What is 145 + 278?',
         answer: 423,
-        hint: 'Solve to open the first gate',
-        solvedTiles: [[19, 19], [20, 19]],
+        hint: 'Addition: solve to open the first gate',
+        solvedTiles: [[21, 37], [22, 37]],
       },
       {
-        x: 20, y: 12, id: 'forest-gate-2',
+        x: 14, y: 34, id: 'forest-gate-2',
         question: 'What is 12 x 15?',
         answer: 180,
-        hint: 'Solve to open the second gate',
-        solvedTiles: [[19, 11], [20, 11]],
+        hint: 'Multiplication: solve to enter the garden',
+        solvedTiles: [[14, 33], [15, 33]],
       },
       {
-        x: 8, y: 15, id: 'forest-gate-3',
+        x: 26, y: 26, id: 'forest-gate-3',
         question: 'What is 144 / 12?',
         answer: 12,
-        hint: 'Solve to find a hidden treasure',
-        solvedTiles: [[7, 15], [7, 16]],
+        hint: 'Division: solve to reach the pond',
+        solvedTiles: [[27, 25], [27, 26]],
+      },
+      {
+        x: 22, y: 12, id: 'forest-gate-4',
+        question: 'What is 500 - 237?',
+        answer: 263,
+        hint: 'Subtraction: the final gate before the caves',
+        solvedTiles: [[21, 11], [22, 11]],
       },
     ],
     transitions: [
-      { x: 19, y: 0, zone: 'caves', spawnX: 10, spawnY: 13 },
-      { x: 20, y: 0, zone: 'caves', spawnX: 11, spawnY: 13 },
+      { x: 21, y: 0, zone: 'caves', spawnX: 10, spawnY: 13 },
+      { x: 22, y: 0, zone: 'caves', spawnX: 11, spawnY: 13 },
     ],
   };
 
@@ -100,94 +117,126 @@
     ],
     puzzles: [],
     transitions: [
-      { x: 10, y: 14, zone: 'forest', spawnX: 19, spawnY: 1 },
-      { x: 11, y: 14, zone: 'forest', spawnX: 20, spawnY: 1 },
+      { x: 10, y: 14, zone: 'forest', spawnX: 21, spawnY: 1 },
+      { x: 11, y: 14, zone: 'forest', spawnX: 22, spawnY: 1 },
     ],
   };
 
   function buildForestMap() {
-    var W = 40, H = 30;
+    var W = 44, H = 50;
     var m = [];
     for (var y = 0; y < H; y++) {
       m[y] = [];
       for (var x = 0; x < W; x++) {
-        m[y][x] = GRASS;
+        m[y][x] = TREE;
       }
     }
 
     function fill(x1, y1, x2, y2, t) {
       for (var yy = y1; yy <= y2; yy++)
         for (var xx = x1; xx <= x2; xx++)
-          m[yy][xx] = t;
+          if (yy >= 0 && yy < H && xx >= 0 && xx < W) m[yy][xx] = t;
     }
-    function set(x, y, t) { m[y][x] = t; }
+    function set(x, y, t) { if (y >= 0 && y < H && x >= 0 && x < W) m[y][x] = t; }
 
-    // Border trees
-    fill(0, 0, W - 1, 0, TREE);
-    fill(0, H - 1, W - 1, H - 1, TREE);
-    fill(0, 0, 0, H - 1, TREE);
-    fill(W - 1, 0, W - 1, H - 1, TREE);
+    // ==========================================
+    // Room 1: Entrance Clearing (south, center)
+    // A welcoming opening where the player arrives.
+    // ==========================================
+    fill(16, 40, 28, 46, GRASS);
+    // Path into room from south border
+    fill(20, 47, 23, 49, PATH);
+    // Decorative path inside room
+    fill(21, 40, 22, 46, PATH);
+    // A few trees inside for atmosphere
+    set(17, 42, TREE); set(27, 42, TREE);
+    set(18, 45, TREE); set(26, 45, TREE);
 
-    // Second layer of border trees for thickness
-    fill(1, 1, W - 2, 1, TREE);
-    fill(1, H - 2, W - 2, H - 2, TREE);
-    fill(1, 1, 1, H - 2, TREE);
-    fill(W - 2, 1, W - 2, H - 2, TREE);
+    // ==========================================
+    // Corridor: Room 1 → Room 2 (goes north then west)
+    // ==========================================
+    // North out of Room 1
+    fill(21, 36, 22, 40, PATH);
+    // Gate 1 blocks this corridor (addition puzzle)
+    set(21, 37, DOOR); set(22, 37, DOOR);
+    set(21, 38, PUZZLE);
+    // West corridor to Room 2
+    fill(14, 34, 22, 35, PATH);
+    // Gate 2 at Room 2 entrance (multiplication)
+    set(14, 33, DOOR); set(15, 33, DOOR);
+    set(14, 34, PUZZLE);
 
-    // Open up interior
-    fill(2, 2, W - 3, H - 3, GRASS);
+    // ==========================================
+    // Room 2: Puzzle Garden (west side)
+    // A secluded garden with a small flower meadow.
+    // ==========================================
+    fill(4, 28, 16, 36, GRASS);
+    // Garden path
+    fill(9, 28, 10, 36, PATH);
+    fill(4, 32, 16, 32, PATH);
+    // Decorative trees and flowers
+    set(5, 29, TREE); set(15, 29, TREE);
+    set(5, 35, TREE); set(15, 35, TREE);
+    set(12, 30, TREE);
+    // Water feature (small stream)
+    fill(6, 34, 8, 35, WATER);
 
-    // Main path running north-south through center
-    fill(19, 2, 20, 27, PATH);
+    // ==========================================
+    // Corridor: Room 2 → Room 3 (goes north then east)
+    // ==========================================
+    // North out of Room 2
+    fill(9, 25, 10, 28, PATH);
+    // East corridor to Room 3
+    fill(10, 25, 27, 26, PATH);
+    // Gate 3 at Room 3 entrance (division)
+    set(27, 25, DOOR); set(27, 26, DOOR);
+    set(26, 26, PUZZLE);
 
-    // Wider path at south entrance
-    fill(17, 25, 22, 27, PATH);
+    // ==========================================
+    // Room 3: Pond Clearing (east side)
+    // A moody clearing with a dark pond.
+    // ==========================================
+    fill(27, 19, 40, 28, GRASS);
+    // Path through room
+    fill(32, 19, 33, 28, PATH);
+    // The pond
+    fill(29, 21, 31, 24, WATER);
+    // Decorative trees
+    set(28, 20, TREE); set(39, 20, TREE);
+    set(28, 27, TREE); set(39, 27, TREE);
+    set(36, 22, TREE); set(37, 25, TREE);
 
-    // South entrance opening in border
-    fill(17, 28, 22, 29, PATH);
+    // ==========================================
+    // Corridor: Room 3 → Room 4 (goes north then west)
+    // ==========================================
+    // North out of Room 3
+    fill(32, 15, 33, 19, PATH);
+    // West corridor to Room 4
+    fill(22, 14, 33, 15, PATH);
+    // South entrance into Room 4
+    fill(21, 11, 22, 14, PATH);
+    // Gate 4 blocks entry to Room 4 (subtraction)
+    set(21, 11, DOOR); set(22, 11, DOOR);
+    set(22, 12, PUZZLE);
 
-    // North exit opening
-    set(19, 0, TRANSITION);
-    set(20, 0, TRANSITION);
-    set(19, 1, PATH);
-    set(20, 1, PATH);
+    // ==========================================
+    // Room 4: Guardian's Gate (north, center)
+    // The final room before the caves. Grand and imposing.
+    // ==========================================
+    fill(14, 3, 30, 11, GRASS);
+    // Central platform/path
+    fill(21, 3, 22, 11, PATH);
+    fill(16, 7, 28, 8, PATH);
+    // Decorative trees (pillars)
+    set(16, 4, TREE); set(28, 4, TREE);
+    set(16, 10, TREE); set(28, 10, TREE);
+    set(19, 7, TREE); set(25, 7, TREE);
 
-    // Gate 1: blocks path at row 19 (between south start and middle)
-    set(19, 19, DOOR);
-    set(20, 19, DOOR);
-    // Puzzle stone next to gate 1
-    set(19, 20, PUZZLE);
-
-    // Gate 2: blocks path at row 11 (between middle and north exit)
-    set(19, 11, DOOR);
-    set(20, 11, DOOR);
-    // Puzzle stone next to gate 2
-    set(20, 12, PUZZLE);
-
-    // West clearing (side area with optional puzzle)
-    fill(3, 13, 10, 18, GRASS);
-    fill(11, 15, 18, 16, PATH);
-    // Puzzle gate blocking entry to west clearing
-    set(7, 15, DOOR);
-    set(7, 16, DOOR);
-    set(8, 15, PUZZLE);
-
-    // Water pond in west clearing
-    fill(4, 14, 6, 16, WATER);
-
-    // Scattered trees for atmosphere
-    var treePlaces = [
-      [4,4],[7,3],[12,4],[15,5],[25,4],[30,3],[35,5],[33,8],
-      [4,8],[8,7],[14,8],[25,8],[28,6],[35,10],[5,22],[8,23],
-      [13,22],[15,25],[25,22],[28,24],[33,22],[35,25],[30,26],
-      [4,10],[36,15],[34,18],[3,21],[10,9],[27,10],[32,13],
-      [14,15],[14,18],[26,15],[26,18],[33,20],[5,5],[36,4],
-      [12,26],[27,26],[34,27],[3,26],
-    ];
-    for (var i = 0; i < treePlaces.length; i++) {
-      var tx = treePlaces[i][0], ty = treePlaces[i][1];
-      if (m[ty] && m[ty][tx] === GRASS) set(tx, ty, TREE);
-    }
+    // ==========================================
+    // North exit to Crystal Caves
+    // ==========================================
+    fill(21, 0, 22, 3, PATH);
+    set(21, 0, TRANSITION); set(22, 0, TRANSITION);
 
     return m;
   }
@@ -234,7 +283,7 @@
 
   var currentZone = 'forest';
   var player = {
-    x: 19, y: 26, facing: 'up',
+    x: 21, y: 46, facing: 'up',
     moving: false, moveProgress: 0,
     px: 0, py: 0,
     startPx: 0, startPy: 0,
