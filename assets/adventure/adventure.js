@@ -48,7 +48,7 @@
         ],
       },
       {
-        x: 33, y: 22,
+        x: 36, y: 22,
         name: 'Pond Keeper',
         lines: [
           'The water here once ran clear...',
@@ -68,32 +68,32 @@
     ],
     puzzles: [
       {
-        x: 21, y: 38, id: 'forest-gate-1',
+        x: 20, y: 41, id: 'forest-gate-1',
         question: 'What is 145 + 278?',
         answer: 423,
-        hint: 'Addition: solve to open the first gate',
-        solvedTiles: [[21, 37], [22, 37]],
+        hint: 'Addition: solve to leave the clearing',
+        solvedTiles: [[21, 40], [22, 40]],
       },
       {
-        x: 14, y: 34, id: 'forest-gate-2',
+        x: 16, y: 35, id: 'forest-gate-2',
         question: 'What is 12 x 15?',
         answer: 180,
         hint: 'Multiplication: solve to enter the garden',
-        solvedTiles: [[14, 33], [15, 33]],
+        solvedTiles: [[15, 34], [15, 35]],
       },
       {
-        x: 26, y: 26, id: 'forest-gate-3',
+        x: 27, y: 23, id: 'forest-gate-3',
         question: 'What is 144 / 12?',
         answer: 12,
         hint: 'Division: solve to reach the pond',
-        solvedTiles: [[27, 25], [27, 26]],
+        solvedTiles: [[28, 23], [28, 24]],
       },
       {
-        x: 22, y: 12, id: 'forest-gate-4',
+        x: 22, y: 13, id: 'forest-gate-4',
         question: 'What is 500 - 237?',
         answer: 263,
         hint: 'Subtraction: the final gate before the caves',
-        solvedTiles: [[21, 11], [22, 11]],
+        solvedTiles: [[21, 12], [22, 12]],
       },
     ],
     transitions: [
@@ -127,9 +127,7 @@
     var m = [];
     for (var y = 0; y < H; y++) {
       m[y] = [];
-      for (var x = 0; x < W; x++) {
-        m[y][x] = TREE;
-      }
+      for (var x = 0; x < W; x++) m[y][x] = TREE;
     }
 
     function fill(x1, y1, x2, y2, t) {
@@ -139,103 +137,84 @@
     }
     function set(x, y, t) { if (y >= 0 && y < H && x >= 0 && x < W) m[y][x] = t; }
 
-    // ==========================================
-    // Room 1: Entrance Clearing (south, center)
-    // A welcoming opening where the player arrives.
-    // ==========================================
-    fill(16, 40, 28, 46, GRASS);
-    // Path into room from south border
-    fill(20, 47, 23, 49, PATH);
-    // Decorative path inside room
-    fill(21, 40, 22, 46, PATH);
-    // A few trees inside for atmosphere
-    set(17, 42, TREE); set(27, 42, TREE);
-    set(18, 45, TREE); set(26, 45, TREE);
+    // ===================
+    // Room 1: Entrance Clearing
+    // ===================
+    fill(16, 41, 28, 47, GRASS);
+    fill(21, 41, 22, 47, PATH);
+    fill(21, 48, 22, 49, PATH);
+    set(17, 43, TREE); set(27, 43, TREE);
+    set(18, 46, TREE); set(26, 46, TREE);
 
-    // ==========================================
-    // Corridor: Room 1 → Room 2 (goes north then west)
-    // ==========================================
-    // North out of Room 1
-    fill(21, 36, 22, 40, PATH);
-    // Gate 1 blocks this corridor (addition puzzle)
-    set(21, 37, DOOR); set(22, 37, DOOR);
-    set(21, 38, PUZZLE);
-    // West corridor to Room 2
-    fill(14, 34, 22, 35, PATH);
-    // Gate 2 at Room 2 entrance (multiplication)
-    set(14, 33, DOOR); set(15, 33, DOOR);
-    set(14, 34, PUZZLE);
+    // Gate 1: north wall of Room 1
+    set(21, 40, DOOR); set(22, 40, DOOR);
+    set(20, 41, PUZZLE);
 
-    // ==========================================
-    // Room 2: Puzzle Garden (west side)
-    // A secluded garden with a small flower meadow.
-    // ==========================================
-    fill(4, 28, 16, 36, GRASS);
-    // Garden path
+    // ===================
+    // Corridor: Room 1 → Room 2
+    // ===================
+    fill(21, 35, 22, 39, PATH);
+    fill(16, 34, 22, 35, PATH);
+
+    // Gate 2: east wall of Room 2
+    set(15, 34, DOOR); set(15, 35, DOOR);
+    set(16, 35, PUZZLE);
+
+    // ===================
+    // Room 2: Puzzle Garden
+    // ===================
+    fill(4, 28, 14, 36, GRASS);
     fill(9, 28, 10, 36, PATH);
-    fill(4, 32, 16, 32, PATH);
-    // Decorative trees and flowers
-    set(5, 29, TREE); set(15, 29, TREE);
-    set(5, 35, TREE); set(15, 35, TREE);
-    set(12, 30, TREE);
-    // Water feature (small stream)
-    fill(6, 34, 8, 35, WATER);
+    fill(4, 32, 14, 32, PATH);
+    set(5, 29, TREE); set(13, 29, TREE);
+    set(13, 35, TREE); set(11, 31, TREE);
+    fill(5, 34, 7, 35, WATER);
 
-    // ==========================================
-    // Corridor: Room 2 → Room 3 (goes north then east)
-    // ==========================================
-    // North out of Room 2
-    fill(9, 25, 10, 28, PATH);
-    // East corridor to Room 3
-    fill(10, 25, 27, 26, PATH);
-    // Gate 3 at Room 3 entrance (division)
-    set(27, 25, DOOR); set(27, 26, DOOR);
-    set(26, 26, PUZZLE);
+    // ===================
+    // Corridor: Room 2 → Room 3
+    // ===================
+    fill(9, 24, 10, 27, PATH);
+    fill(10, 23, 27, 24, PATH);
 
-    // ==========================================
-    // Room 3: Pond Clearing (east side)
-    // A moody clearing with a dark pond.
-    // ==========================================
-    fill(27, 19, 40, 28, GRASS);
-    // Path through room
-    fill(32, 19, 33, 28, PATH);
-    // The pond
-    fill(29, 21, 31, 24, WATER);
-    // Decorative trees
-    set(28, 20, TREE); set(39, 20, TREE);
-    set(28, 27, TREE); set(39, 27, TREE);
-    set(36, 22, TREE); set(37, 25, TREE);
+    // Gate 3: west wall of Room 3
+    set(28, 23, DOOR); set(28, 24, DOOR);
+    set(27, 23, PUZZLE);
 
-    // ==========================================
-    // Corridor: Room 3 → Room 4 (goes north then west)
-    // ==========================================
-    // North out of Room 3
-    fill(32, 15, 33, 19, PATH);
-    // West corridor to Room 4
-    fill(22, 14, 33, 15, PATH);
-    // South entrance into Room 4
-    fill(21, 11, 22, 14, PATH);
-    // Gate 4 blocks entry to Room 4 (subtraction)
-    set(21, 11, DOOR); set(22, 11, DOOR);
-    set(22, 12, PUZZLE);
+    // ===================
+    // Room 3: Pond Clearing
+    // ===================
+    fill(29, 18, 40, 28, GRASS);
+    fill(33, 18, 34, 28, PATH);
+    fill(30, 21, 32, 24, WATER);
+    set(30, 19, TREE); set(39, 19, TREE);
+    set(30, 27, TREE); set(39, 27, TREE);
+    set(37, 22, TREE);
 
-    // ==========================================
-    // Room 4: Guardian's Gate (north, center)
-    // The final room before the caves. Grand and imposing.
-    // ==========================================
+    // ===================
+    // Corridor: Room 3 → Room 4
+    // ===================
+    fill(33, 14, 34, 17, PATH);
+    fill(22, 13, 34, 14, PATH);
+    fill(21, 12, 22, 14, PATH);
+
+    // Gate 4: south wall of Room 4
+    set(21, 12, DOOR); set(22, 12, DOOR);
+    set(22, 13, PUZZLE);
+
+    // ===================
+    // Room 4: Guardian's Gate
+    // ===================
     fill(14, 3, 30, 11, GRASS);
-    // Central platform/path
     fill(21, 3, 22, 11, PATH);
     fill(16, 7, 28, 8, PATH);
-    // Decorative trees (pillars)
     set(16, 4, TREE); set(28, 4, TREE);
     set(16, 10, TREE); set(28, 10, TREE);
     set(19, 7, TREE); set(25, 7, TREE);
 
-    // ==========================================
+    // ===================
     // North exit to Crystal Caves
-    // ==========================================
-    fill(21, 0, 22, 3, PATH);
+    // ===================
+    fill(21, 0, 22, 2, PATH);
     set(21, 0, TRANSITION); set(22, 0, TRANSITION);
 
     return m;
