@@ -107,6 +107,7 @@
     npcs: [
       {
         x: 10, y: 7,
+        style: 'miner',
         name: 'Cave Explorer',
         lines: [
           'You made it through the forest!',
@@ -823,6 +824,8 @@
   }
 
   function drawNPC(npc) {
+    if (npc.style === 'miner') { drawMiner(npc); return; }
+
     var px = npc.x * TILE;
     var py = npc.y * TILE;
     var hover = Math.sin(performance.now() / 600) * 1.5;
@@ -860,6 +863,58 @@
     ctx.lineTo(px + 20, by + 19);
     ctx.closePath();
     ctx.fill();
+  }
+
+  function drawMiner(npc) {
+    var px = npc.x * TILE;
+    var py = npc.y * TILE;
+    var hover = Math.sin(performance.now() / 600) * 1.5;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(px + 16, py + 30, 8, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    var by = py + hover;
+
+    // Overalls (brown)
+    ctx.fillStyle = '#7a5c3a';
+    ctx.fillRect(px + 8, by + 14, 16, 14);
+    // Suspender straps
+    ctx.fillStyle = '#5c3a1e';
+    ctx.fillRect(px + 10, by + 14, 3, 10);
+    ctx.fillRect(px + 19, by + 14, 3, 10);
+
+    // Head
+    ctx.fillStyle = '#f5c6a0';
+    ctx.fillRect(px + 10, by + 5, 12, 10);
+
+    // Hard hat (yellow)
+    ctx.fillStyle = '#e6b800';
+    ctx.fillRect(px + 8, by + 2, 16, 5);
+    // Hat brim
+    ctx.fillRect(px + 6, by + 6, 20, 2);
+
+    // Headlamp (glowing)
+    var glow = 0.6 + Math.sin(performance.now() / 400) * 0.3;
+    ctx.fillStyle = 'rgba(255, 255, 150, ' + glow + ')';
+    ctx.beginPath();
+    ctx.arc(px + 16, by + 4, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes
+    ctx.fillStyle = '#333';
+    ctx.fillRect(px + 12, by + 9, 3, 2);
+    ctx.fillRect(px + 17, by + 9, 3, 2);
+
+    // Stubble
+    ctx.fillStyle = '#b0967a';
+    ctx.fillRect(px + 12, by + 13, 8, 2);
+
+    // Boots
+    ctx.fillStyle = '#3a2a1a';
+    ctx.fillRect(px + 8, by + 26, 6, 4);
+    ctx.fillRect(px + 18, by + 26, 6, 4);
   }
 
   function drawNPCs() {
