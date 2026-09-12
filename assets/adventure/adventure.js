@@ -357,7 +357,7 @@
   var playerHp = 3;
   var playerMaxHp = 3;
   var playerInvuln = 0;
-  var PROJECTILE_SPEED = 100;
+  var PROJECTILE_SPEED = 120;
 
   // --- Helpers ---
 
@@ -439,7 +439,14 @@
       playerHp = playerMaxHp;
       playerInvuln = 0;
       boss.projectiles = [];
-      boss.attackTimer = 2000;
+      boss.attackTimer = 3000;
+      dialog.active = true;
+      dialog.npc = { name: '!!!', lines: [
+        'A massive creature blocks the path ahead!',
+        'Walk up the path and use the puzzle stone to breach its shell.',
+        'Get inside and strike the glowing core. Dodge its attacks!',
+      ]};
+      dialog.lineIndex = 0;
     }
   }
 
@@ -555,18 +562,27 @@
   function spawnProjectiles() {
     var cx = (boss.bodyRect.x + boss.bodyRect.w / 2) * TILE;
     var cy = (boss.bodyRect.y + boss.bodyRect.h / 2) * TILE;
-    var dirs;
+    var pcx = player.px + TILE / 2;
+    var pcy = player.py + TILE / 2;
 
-    if (boss.phase === 0) {
-      dirs = [[0,-1],[0,1],[-1,0],[1,0]];
-    } else if (boss.phase === 1) {
-      dirs = [[-0.707,-0.707],[0.707,-0.707],[-0.707,0.707],[0.707,0.707]];
-    } else {
-      dirs = [[0,-1],[0,1],[-1,0],[1,0],[-0.707,-0.707],[0.707,-0.707],[-0.707,0.707],[0.707,0.707]];
-    }
+    var count = boss.phase === 0 ? 3 : boss.phase === 1 ? 4 : 5;
 
-    for (var i = 0; i < dirs.length; i++) {
-      boss.projectiles.push({ x: cx, y: cy, dx: dirs[i][0], dy: dirs[i][1] });
+    for (var i = 0; i < count; i++) {
+      var angle;
+      if (i === 0) {
+        // One projectile aimed at the player
+        angle = Math.atan2(pcy - cy, pcx - cx);
+      } else {
+        // Rest are random directions
+        angle = Math.random() * Math.PI * 2;
+      }
+      // Add slight random spread to all
+      angle += (Math.random() - 0.5) * 0.4;
+      boss.projectiles.push({
+        x: cx, y: cy,
+        dx: Math.cos(angle),
+        dy: Math.sin(angle),
+      });
     }
   }
 
