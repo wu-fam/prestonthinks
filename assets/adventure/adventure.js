@@ -17,8 +17,10 @@
   var STONE = 7;
   var CRYSTAL = 8;
   var PUZZLE = 9;
+  var BOSS_WALL = 10;
+  var BOSS_CORE = 11;
 
-  var SOLID = [TREE, DOOR, WATER, CRYSTAL, PUZZLE];
+  var SOLID = [TREE, DOOR, WATER, CRYSTAL, PUZZLE, BOSS_WALL, BOSS_CORE];
   var WALKABLE_SPECIAL = [TRANSITION];
 
   // --- Zone definitions ---
@@ -97,8 +99,8 @@
       },
     ],
     transitions: [
-      { x: 21, y: 0, zone: 'caves', spawnX: 10, spawnY: 13 },
-      { x: 22, y: 0, zone: 'caves', spawnX: 11, spawnY: 13 },
+      { x: 21, y: 0, zone: 'boss', spawnX: 13, spawnY: 19 },
+      { x: 22, y: 0, zone: 'boss', spawnX: 14, spawnY: 19 },
     ],
   };
 
@@ -259,6 +261,58 @@
     return m;
   }
 
+  ZONES.boss = {
+    map: buildBossMap(),
+    npcs: [],
+    puzzles: [],
+    transitions: [
+      { x: 13, y: 20, zone: 'forest', spawnX: 21, spawnY: 1 },
+      { x: 14, y: 20, zone: 'forest', spawnX: 22, spawnY: 1 },
+    ],
+  };
+
+  function buildBossMap() {
+    var W = 28, H = 22;
+    var m = [];
+    for (var y = 0; y < H; y++) {
+      m[y] = [];
+      for (var x = 0; x < W; x++) m[y][x] = TREE;
+    }
+
+    function fill(x1, y1, x2, y2, t) {
+      for (var yy = y1; yy <= y2; yy++)
+        for (var xx = x1; xx <= x2; xx++)
+          m[yy][xx] = t;
+    }
+
+    // Arena floor
+    fill(2, 2, W - 3, H - 3, GRASS);
+
+    // Boss body (rows 5-12, cols 9-18)
+    fill(9, 5, 18, 12, BOSS_WALL);
+
+    // Gate on south side of boss
+    m[12][13] = DOOR;
+    m[12][14] = DOOR;
+
+    // Puzzle stone below gate
+    m[13][13] = PUZZLE;
+
+    // Path from south entrance to boss
+    fill(13, 13, 14, 19, PATH);
+
+    // South entrance
+    fill(13, 20, 14, 21, PATH);
+
+    // Scattered rocks for dodging cover
+    m[4][5] = TREE; m[4][22] = TREE;
+    m[10][4] = TREE; m[10][23] = TREE;
+    m[16][6] = TREE; m[16][21] = TREE;
+    m[8][4] = TREE; m[8][23] = TREE;
+
+    return m;
+  }
+
   // --- State ---
 
   var currentZone = 'forest';
@@ -278,6 +332,32 @@
   var canvas, ctx;
   var lastTime = 0;
   var spaceHandled = false;
+
+  // --- Boss state ---
+  var boss = {
+    hp: 3,
+    maxHp: 3,
+    phase: 0,
+    gateOpen: false,
+    defeated: false,
+    hitAnim: 0,
+    projectiles: [],
+    attackTimer: 2000,
+    puzzles: [
+      { question: 'What is 25 x 4?', answer: 100, hint: 'Breach the creature!' },
+      { question: 'What is 13 x 17?', answer: 221, hint: 'Find the weak point!' },
+      { question: 'What is 256 / 16?', answer: 16, hint: 'One last strike!' },
+    ],
+    bodyRect: { x: 9, y: 5, w: 10, h: 8 },
+    gateTiles: [[13, 12], [14, 12]],
+    interiorTiles: [],
+    coreTile: [13, 8],
+  };
+
+  var playerHp = 3;
+  var playerMaxHp = 3;
+  var playerInvuln = 0;
+  var PROJECTILE_SPEED = 100;
 
   // --- Helpers ---
 
@@ -342,6 +422,7 @@
       if (npcAt(tx, ty)) return { type: 'npc', x: tx, y: ty };
       if (tileAt(tx, ty) === DOOR) return { type: 'door', x: tx, y: ty };
       if (tileAt(tx, ty) === PUZZLE) return { type: 'puzzle', x: tx, y: ty };
+      if (tileAt(tx, ty) === BOSS_CORE) return { type: 'core', x: tx, y: ty };
     }
     return null;
   }
@@ -354,6 +435,12 @@
     player.py = spawnY * TILE;
     player.moving = false;
     updateCamera();
+    if (name === 'boss' && !boss.defeated) {
+      playerHp = playerMaxHp;
+      playerInvuln = 0;
+      boss.projectiles = [];
+      boss.attackTimer = 2000;
+    }
   }
 
   function solvePuzzle(p) {
@@ -363,6 +450,176 @@
       var sx = p.solvedTiles[i][0];
       var sy = p.solvedTiles[i][1];
       zone.map[sy][sx] = PATH;
+    }
+  }
+
+  // --- Boss logic ---
+
+  (function initBossInterior() {
+    var b = boss.bodyRect;
+    var tiles = [];
+    for (var y = b.y + 2; y <= b.y + b.h - 2; y++) {
+      for (var x = b.x + 2; x <= b.x + b.w - 2; x++) {
+        tiles.push([x, y]);
+      }
+    }
+    // Path from gate into interior
+    for (var gy = b.y + b.h - 2; gy >= b.y + 2; gy--) {
+      tiles.push([13, gy]);
+      tiles.push([14, gy]);
+    }
+    boss.interiorTiles = tiles;
+  })();
+
+  function openBossGate() {
+    var zone = ZONES.boss;
+    for (var i = 0; i < boss.gateTiles.length; i++) {
+      zone.map[boss.gateTiles[i][1]][boss.gateTiles[i][0]] = PATH;
+    }
+    for (var j = 0; j < boss.interiorTiles.length; j++) {
+      var t = boss.interiorTiles[j];
+      zone.map[t[1]][t[0]] = GRASS;
+    }
+    zone.map[boss.coreTile[1]][boss.coreTile[0]] = BOSS_CORE;
+    boss.gateOpen = true;
+  }
+
+  function closeBossGate() {
+    var zone = ZONES.boss;
+    for (var i = 0; i < boss.gateTiles.length; i++) {
+      zone.map[boss.gateTiles[i][1]][boss.gateTiles[i][0]] = DOOR;
+    }
+    for (var j = 0; j < boss.interiorTiles.length; j++) {
+      var t = boss.interiorTiles[j];
+      zone.map[t[1]][t[0]] = BOSS_WALL;
+    }
+    zone.map[boss.coreTile[1]][boss.coreTile[0]] = BOSS_WALL;
+    boss.gateOpen = false;
+  }
+
+  function hitBossCore() {
+    boss.hp--;
+    boss.hitAnim = 500;
+    boss.phase++;
+    closeBossGate();
+
+    player.x = 13;
+    player.y = 15;
+    player.px = 13 * TILE;
+    player.py = 15 * TILE;
+    player.moving = false;
+    player.facing = 'up';
+
+    if (boss.hp <= 0) {
+      boss.defeated = true;
+      var zone = ZONES.boss;
+      var b = boss.bodyRect;
+      for (var y = b.y; y < b.y + b.h; y++) {
+        for (var x = b.x; x < b.x + b.w; x++) {
+          zone.map[y][x] = GRASS;
+        }
+      }
+      zone.map[13][13] = GRASS;
+      zone.map[2][13] = TRANSITION;
+      zone.map[2][14] = TRANSITION;
+      zone.transitions.push({ x: 13, y: 2, zone: 'caves', spawnX: 10, spawnY: 13 });
+      zone.transitions.push({ x: 14, y: 2, zone: 'caves', spawnX: 11, spawnY: 13 });
+
+      dialog.active = true;
+      dialog.npc = { name: 'Victory!', lines: [
+        'The creature crumbles! The path to the caves is open.',
+        'You proved your worth, traveler. Onward!',
+      ]};
+      dialog.lineIndex = 0;
+    }
+  }
+
+  function resetBoss() {
+    boss.hp = boss.maxHp;
+    boss.phase = 0;
+    boss.gateOpen = false;
+    boss.defeated = false;
+    boss.projectiles = [];
+    boss.attackTimer = 2000;
+    boss.hitAnim = 0;
+    closeBossGate();
+    playerHp = playerMaxHp;
+    player.x = 13;
+    player.y = 19;
+    player.px = 13 * TILE;
+    player.py = 19 * TILE;
+    player.moving = false;
+    player.facing = 'up';
+  }
+
+  function spawnProjectiles() {
+    var cx = (boss.bodyRect.x + boss.bodyRect.w / 2) * TILE;
+    var cy = (boss.bodyRect.y + boss.bodyRect.h / 2) * TILE;
+    var dirs;
+
+    if (boss.phase === 0) {
+      dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+    } else if (boss.phase === 1) {
+      dirs = [[-0.707,-0.707],[0.707,-0.707],[-0.707,0.707],[0.707,0.707]];
+    } else {
+      dirs = [[0,-1],[0,1],[-1,0],[1,0],[-0.707,-0.707],[0.707,-0.707],[-0.707,0.707],[0.707,0.707]];
+    }
+
+    for (var i = 0; i < dirs.length; i++) {
+      boss.projectiles.push({ x: cx, y: cy, dx: dirs[i][0], dy: dirs[i][1] });
+    }
+  }
+
+  function getAttackInterval() {
+    if (boss.phase === 0) return 2500;
+    if (boss.phase === 1) return 2000;
+    return 1500;
+  }
+
+  function updateBoss(dt) {
+    if (boss.defeated) return;
+    if (dialog.active || puzzle.active) return;
+
+    if (boss.hitAnim > 0) boss.hitAnim -= dt;
+
+    boss.attackTimer -= dt;
+    if (boss.attackTimer <= 0) {
+      spawnProjectiles();
+      boss.attackTimer = getAttackInterval();
+    }
+
+    if (playerInvuln > 0) playerInvuln -= dt;
+
+    var pcx = player.px + TILE / 2;
+    var pcy = player.py + TILE / 2;
+
+    for (var i = boss.projectiles.length - 1; i >= 0; i--) {
+      var p = boss.projectiles[i];
+      p.x += p.dx * PROJECTILE_SPEED * dt / 1000;
+      p.y += p.dy * PROJECTILE_SPEED * dt / 1000;
+
+      var tileX = Math.floor(p.x / TILE);
+      var tileY = Math.floor(p.y / TILE);
+      var tile = tileAt(tileX, tileY);
+      if (tile === -1 || tile === TREE) {
+        boss.projectiles.splice(i, 1);
+        continue;
+      }
+
+      var distX = p.x - pcx;
+      var distY = p.y - pcy;
+      if (Math.sqrt(distX * distX + distY * distY) < TILE * 0.6 && playerInvuln <= 0) {
+        playerHp--;
+        playerInvuln = 1000;
+        boss.projectiles.splice(i, 1);
+
+        if (playerHp <= 0) {
+          dialog.active = true;
+          dialog.npc = { name: 'Defeated!', lines: ['The creature was too strong... Try again!'] };
+          dialog.lineIndex = 0;
+          setTimeout(resetBoss, 1000);
+        }
+      }
     }
   }
 
@@ -420,6 +677,28 @@
       return;
     }
 
+    if (currentZone === 'boss' && tileAt(tx, ty) === BOSS_CORE) {
+      hitBossCore();
+      return;
+    }
+
+    if (currentZone === 'boss' && tileAt(tx, ty) === PUZZLE) {
+      if (boss.defeated) return;
+      if (boss.gateOpen) {
+        dialog.active = true;
+        dialog.npc = { name: 'Puzzle Stone', lines: ['The gate is open! Get inside and hit the core!'] };
+        dialog.lineIndex = 0;
+      } else if (boss.phase < boss.puzzles.length) {
+        puzzle.active = true;
+        puzzle.data = boss.puzzles[boss.phase];
+        puzzle.input = '';
+        puzzle.feedback = '';
+        puzzle.feedbackTime = 0;
+        puzzle.isBoss = true;
+      }
+      return;
+    }
+
     var p = puzzleAt(tx, ty);
     if (p) {
       if (solvedPuzzles[p.id]) {
@@ -432,6 +711,7 @@
         puzzle.input = '';
         puzzle.feedback = '';
         puzzle.feedbackTime = 0;
+        puzzle.isBoss = false;
       }
       return;
     }
@@ -452,7 +732,11 @@
       return;
     }
     if (answer === puzzle.data.answer) {
-      solvePuzzle(puzzle.data);
+      if (puzzle.isBoss) {
+        openBossGate();
+      } else {
+        solvePuzzle(puzzle.data);
+      }
       puzzle.feedback = 'Correct!';
       puzzle.feedbackTime = performance.now();
       setTimeout(function () {
@@ -460,6 +744,7 @@
         puzzle.data = null;
         puzzle.input = '';
         puzzle.feedback = '';
+        puzzle.isBoss = false;
       }, 800);
     } else {
       puzzle.feedback = 'Try again!';
@@ -558,6 +843,7 @@
   }
 
   function update(dt) {
+    if (currentZone === 'boss') updateBoss(dt);
     if (dialog.active || puzzle.active) return;
 
     if (player.moving) {
@@ -622,9 +908,14 @@
     drawNPCs();
     drawPlayer();
     drawInteractIndicator();
+    if (currentZone === 'boss') {
+      drawBossCreature();
+      drawProjectiles();
+    }
 
     ctx.restore();
 
+    if (currentZone === 'boss' && !boss.defeated) drawBossHud();
     if (dialog.active) drawDialog();
     if (puzzle.active) drawPuzzle();
   }
@@ -649,11 +940,29 @@
         else if (tile === CRYSTAL) drawCrystal(px, py);
         else if (tile === PUZZLE) drawPuzzleStone(px, py);
         else if (tile === TRANSITION) drawTransition(px, py);
+        else if (tile === BOSS_WALL) drawBossWallTile(px, py);
+        else if (tile === BOSS_CORE) drawBossCoreTile(px, py);
       }
     }
   }
 
   function drawGround(px, py, tile) {
+    if (currentZone === 'boss') {
+      if (tile === PATH || tile === TRANSITION || tile === GRASS) {
+        ctx.fillStyle = '#3a4a2e';
+        ctx.fillRect(px, py, TILE, TILE);
+        ctx.fillStyle = '#2e3e24';
+        var bx = Math.floor(px / TILE), by = Math.floor(py / TILE);
+        if ((bx + by) % 3 === 0) {
+          ctx.fillRect(px + 8, py + 12, 2, 4);
+        }
+      } else {
+        ctx.fillStyle = '#2a2a1e';
+        ctx.fillRect(px, py, TILE, TILE);
+      }
+      return;
+    }
+
     if (currentZone === 'caves') {
       if (tile === STONE || tile === TRANSITION) {
         ctx.fillStyle = '#3a3a4a';
@@ -765,6 +1074,138 @@
 
   function drawTransition(px, py) {
     // drawn by drawGround as PATH
+  }
+
+  function drawBossWallTile(px, py) {
+    var flash = boss.hitAnim > 0 ? 0.4 : 0;
+    ctx.fillStyle = flash > 0 ? '#884444' : '#3a2a1e';
+    ctx.fillRect(px, py, TILE, TILE);
+    ctx.fillStyle = flash > 0 ? '#aa5555' : '#4a3528';
+    ctx.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+    var vein = 0.15 + Math.sin(performance.now() / 2000 + px * 0.1 + py * 0.1) * 0.1;
+    ctx.fillStyle = 'rgba(160, 40, 40, ' + vein + ')';
+    ctx.fillRect(px + 6, py + 4, 3, TILE - 8);
+    ctx.fillRect(px + 14, py + 8, 4, TILE - 12);
+  }
+
+  function drawBossCoreTile(px, py) {
+    ctx.fillStyle = '#2a1a10';
+    ctx.fillRect(px, py, TILE, TILE);
+    var glow = 0.6 + Math.sin(performance.now() / 300) * 0.4;
+    ctx.fillStyle = 'rgba(255, 60, 60, ' + glow + ')';
+    ctx.beginPath();
+    ctx.arc(px + 16, py + 16, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255, 200, 100, ' + (glow * 0.7) + ')';
+    ctx.beginPath();
+    ctx.arc(px + 16, py + 16, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawBossCreature() {
+    if (boss.defeated) return;
+    var b = boss.bodyRect;
+    var cx = (b.x + b.w / 2) * TILE;
+    var cy = (b.y + 2) * TILE;
+    var breathe = Math.sin(performance.now() / 800) * 2;
+
+    // Eyes
+    var eyeY = cy + breathe;
+    var eyeGlow = 0.7 + Math.sin(performance.now() / 400) * 0.3;
+    ctx.fillStyle = 'rgba(255, 50, 50, ' + eyeGlow + ')';
+    ctx.beginPath();
+    ctx.ellipse(cx - 24, eyeY + 10, 10, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx + 24, eyeY + 10, 10, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pupils
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(cx - 24, eyeY + 10, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + 24, eyeY + 10, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mouth/crack
+    ctx.strokeStyle = 'rgba(255, 80, 40, 0.6)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx - 20, cy + 50 + breathe);
+    ctx.quadraticCurveTo(cx, cy + 60 + breathe, cx + 20, cy + 50 + breathe);
+    ctx.stroke();
+  }
+
+  function drawProjectiles() {
+    for (var i = 0; i < boss.projectiles.length; i++) {
+      var p = boss.projectiles[i];
+      var glow = 0.7 + Math.sin(performance.now() / 200 + i) * 0.3;
+
+      ctx.fillStyle = 'rgba(180, 40, 220, ' + (glow * 0.3) + ')';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(220, 60, 255, ' + glow + ')';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(255, 200, 255, ' + (glow * 0.8) + ')';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawBossHud() {
+    // Player hearts
+    for (var i = 0; i < playerMaxHp; i++) {
+      var hx = 10 + i * 28;
+      var hy = 10;
+      if (i < playerHp) {
+        ctx.fillStyle = '#ff4444';
+      } else {
+        ctx.fillStyle = '#444';
+      }
+      ctx.beginPath();
+      ctx.moveTo(hx + 10, hy + 6);
+      ctx.bezierCurveTo(hx + 10, hy + 2, hx + 4, hy, hx, hy + 6);
+      ctx.bezierCurveTo(hx - 2, hy + 12, hx + 10, hy + 18, hx + 10, hy + 20);
+      ctx.bezierCurveTo(hx + 10, hy + 18, hx + 22, hy + 12, hx + 20, hy + 6);
+      ctx.bezierCurveTo(hx + 16, hy, hx + 10, hy + 2, hx + 10, hy + 6);
+      ctx.fill();
+    }
+
+    // Boss HP bar
+    var barW = 200;
+    var barH = 14;
+    var barX = (VP_W - barW) / 2;
+    var barY = VP_H - 30;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(barX - 2, barY - 2, barW + 4, barH + 4);
+
+    ctx.fillStyle = '#333';
+    ctx.fillRect(barX, barY, barW, barH);
+
+    var hpFrac = boss.hp / boss.maxHp;
+    ctx.fillStyle = '#cc2222';
+    ctx.fillRect(barX, barY, barW * hpFrac, barH);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('FOREST GUARDIAN', VP_W / 2, barY - 6);
+    ctx.textAlign = 'left';
+
+    // Invulnerability flash on player
+    if (playerInvuln > 0 && Math.floor(performance.now() / 100) % 2 === 0) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.fillRect(0, 0, VP_W, VP_H);
+    }
   }
 
   function drawPlayer() {
