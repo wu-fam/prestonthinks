@@ -304,6 +304,12 @@
     // South entrance
     fill(13, 20, 14, 21, PATH);
 
+    // Seal north wall completely (no visible gap)
+    for (var nx = 0; nx < W; nx++) {
+      m[0][nx] = TREE;
+      m[1][nx] = TREE;
+    }
+
     // Scattered rocks for dodging cover
     m[4][5] = TREE; m[4][22] = TREE;
     m[10][4] = TREE; m[10][23] = TREE;
