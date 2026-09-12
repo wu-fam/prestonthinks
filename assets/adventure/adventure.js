@@ -295,11 +295,11 @@
     m[12][13] = DOOR;
     m[12][14] = DOOR;
 
-    // Puzzle stone below gate
-    m[13][13] = PUZZLE;
-
     // Path from south entrance to boss
     fill(13, 13, 14, 19, PATH);
+
+    // Puzzle stone next to path, below gate
+    m[13][12] = PUZZLE;
 
     // South entrance
     fill(13, 20, 14, 21, PATH);
