@@ -361,8 +361,6 @@
   var playerSpeedTimer = 0;
   var PROJECTILE_SPEED = 120;
 
-  var bossDeathAnim = { active: false, timer: 0, particles: [], phase: 0 };
-
   var collectibles = [];
   var collectibleTimer = 0;
   var COLLECTIBLE_INTERVAL = 4000;
@@ -532,7 +530,30 @@
       boss.defeated = true;
       boss.projectiles = [];
       collectibles = [];
-      startBossDeathAnim();
+      var zone = ZONES.boss;
+      var b = boss.bodyRect;
+      for (var y = b.y; y < b.y + b.h; y++) {
+        for (var x = b.x; x < b.x + b.w; x++) {
+          zone.map[y][x] = GRASS;
+        }
+      }
+      zone.map[13][12] = GRASS;
+      // Clear trees north to open a walkable path to caves
+      for (var ty = 0; ty <= 4; ty++) {
+        zone.map[ty][13] = PATH;
+        zone.map[ty][14] = PATH;
+      }
+      zone.map[0][13] = TRANSITION;
+      zone.map[0][14] = TRANSITION;
+      zone.transitions.push({ x: 13, y: 0, zone: 'caves', spawnX: 10, spawnY: 13 });
+      zone.transitions.push({ x: 14, y: 0, zone: 'caves', spawnX: 11, spawnY: 13 });
+
+      dialog.active = true;
+      dialog.npc = { name: 'Victory!', lines: [
+        'The creature crumbles! A path opens to the north.',
+        'The Crystal Caves await. Onward!',
+      ]};
+      dialog.lineIndex = 0;
     }
   }
 
@@ -550,145 +571,12 @@
     playerSpeedTimer = 0;
     collectibles = [];
     collectibleTimer = 0;
-    bossDeathAnim.active = false;
-    bossDeathAnim.particles = [];
     player.x = 13;
     player.y = 19;
     player.px = 13 * TILE;
     player.py = 19 * TILE;
     player.moving = false;
     player.facing = 'up';
-  }
-
-  function startBossDeathAnim() {
-    var b = boss.bodyRect;
-    var cx = (b.x + b.w / 2) * TILE;
-    var cy = (b.y + b.h / 2) * TILE;
-    var particles = [];
-    for (var i = 0; i < 40; i++) {
-      var angle = Math.random() * Math.PI * 2;
-      var speed = 60 + Math.random() * 140;
-      particles.push({
-        x: cx + (Math.random() - 0.5) * 60,
-        y: cy + (Math.random() - 0.5) * 60,
-        dx: Math.cos(angle) * speed,
-        dy: Math.sin(angle) * speed,
-        size: 4 + Math.random() * 8,
-        life: 1,
-        color: Math.random() > 0.5 ? 'r' : 'o',
-      });
-    }
-    bossDeathAnim.active = true;
-    bossDeathAnim.timer = 0;
-    bossDeathAnim.particles = particles;
-    bossDeathAnim.phase = 0;
-  }
-
-  function updateBossDeathAnim(dt) {
-    if (!bossDeathAnim.active) return;
-    bossDeathAnim.timer += dt;
-    var zone = ZONES.boss;
-    var b = boss.bodyRect;
-
-    for (var i = 0; i < bossDeathAnim.particles.length; i++) {
-      var p = bossDeathAnim.particles[i];
-      p.x += p.dx * dt / 1000;
-      p.y += p.dy * dt / 1000;
-      p.dy += 30 * dt / 1000;
-      p.life -= dt / 2500;
-    }
-
-    // Phase 0 (0-800ms): boss body crumbles tile by tile
-    if (bossDeathAnim.phase === 0 && bossDeathAnim.timer > 300) {
-      bossDeathAnim.phase = 1;
-      // Clear boss body row by row from edges inward
-      for (var y = b.y; y < b.y + b.h; y++) {
-        for (var x = b.x; x < b.x + b.w; x++) {
-          if (zone.map[y][x] === BOSS_WALL || zone.map[y][x] === BOSS_CORE) {
-            zone.map[y][x] = GRASS;
-          }
-        }
-      }
-      zone.map[13][12] = GRASS;
-    }
-
-    // Phase 1 (800-1600ms): explosion reaches north wall, blasts trees
-    if (bossDeathAnim.phase === 1 && bossDeathAnim.timer > 1200) {
-      bossDeathAnim.phase = 2;
-      // Clear north trees to reveal cave entrance
-      for (var tx = 11; tx <= 16; tx++) {
-        for (var ty = 0; ty <= 4; ty++) {
-          if (zone.map[ty][tx] === TREE) {
-            zone.map[ty][tx] = GRASS;
-          }
-        }
-      }
-      // Place path and transitions
-      zone.map[1][13] = PATH;
-      zone.map[1][14] = PATH;
-      zone.map[0][13] = TRANSITION;
-      zone.map[0][14] = TRANSITION;
-      zone.transitions.push({ x: 13, y: 0, zone: 'caves', spawnX: 10, spawnY: 13 });
-      zone.transitions.push({ x: 14, y: 0, zone: 'caves', spawnX: 11, spawnY: 13 });
-
-      // Spawn more particles for the tree explosion
-      var ncx = 13.5 * TILE;
-      var ncy = 2 * TILE;
-      for (var j = 0; j < 20; j++) {
-        var a = Math.random() * Math.PI * 2;
-        var s = 40 + Math.random() * 100;
-        bossDeathAnim.particles.push({
-          x: ncx + (Math.random() - 0.5) * 80,
-          y: ncy + (Math.random() - 0.5) * 40,
-          dx: Math.cos(a) * s,
-          dy: Math.sin(a) * s,
-          size: 3 + Math.random() * 6,
-          life: 1,
-          color: 'g',
-        });
-      }
-    }
-
-    // Phase 2 (2000ms+): show victory dialog
-    if (bossDeathAnim.phase === 2 && bossDeathAnim.timer > 2200) {
-      bossDeathAnim.phase = 3;
-      dialog.active = true;
-      dialog.npc = { name: 'Victory!', lines: [
-        'The creature explodes! Its energy blasts through the north wall.',
-        'A path to the Crystal Caves lies ahead. Onward!',
-      ]};
-      dialog.lineIndex = 0;
-    }
-
-    // End animation
-    if (bossDeathAnim.timer > 4000) {
-      bossDeathAnim.active = false;
-      bossDeathAnim.particles = [];
-    }
-  }
-
-  function drawBossDeathAnim() {
-    if (!bossDeathAnim.active) return;
-
-    // Screen flash at the start
-    if (bossDeathAnim.timer < 400) {
-      var flashAlpha = Math.max(0, 0.6 - bossDeathAnim.timer / 600);
-      ctx.fillStyle = 'rgba(255, 255, 200, ' + flashAlpha + ')';
-      ctx.fillRect(0, 0, VP_W, VP_H);
-    }
-
-    // Particles (in world space, called before ctx.restore)
-    for (var i = 0; i < bossDeathAnim.particles.length; i++) {
-      var p = bossDeathAnim.particles[i];
-      if (p.life <= 0) continue;
-      var alpha = Math.max(0, p.life);
-      if (p.color === 'r') ctx.fillStyle = 'rgba(255, 60, 30, ' + alpha + ')';
-      else if (p.color === 'o') ctx.fillStyle = 'rgba(255, 160, 40, ' + alpha + ')';
-      else ctx.fillStyle = 'rgba(60, 180, 60, ' + alpha + ')';
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
-      ctx.fill();
-    }
   }
 
   function spawnCollectible() {
@@ -1058,11 +946,7 @@
   }
 
   function update(dt) {
-    if (currentZone === 'boss') {
-      updateBoss(dt);
-      updateBossDeathAnim(dt);
-    }
-    if (bossDeathAnim.active) return;
+    if (currentZone === 'boss') updateBoss(dt);
     if (dialog.active || puzzle.active) return;
 
     if (player.moving) {
@@ -1132,16 +1016,9 @@
       drawCollectibles();
       drawBossCreature();
       drawProjectiles();
-      drawBossDeathAnim();
     }
 
     ctx.restore();
-
-    if (bossDeathAnim.active && bossDeathAnim.timer < 400) {
-      var flashAlpha = Math.max(0, 0.7 - bossDeathAnim.timer / 500);
-      ctx.fillStyle = 'rgba(255, 255, 200, ' + flashAlpha + ')';
-      ctx.fillRect(0, 0, VP_W, VP_H);
-    }
 
     if (currentZone === 'boss' && !boss.defeated) drawBossHud();
     if (dialog.active) drawDialog();
