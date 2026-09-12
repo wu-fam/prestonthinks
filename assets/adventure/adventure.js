@@ -352,6 +352,7 @@
     gateTiles: [[13, 12], [14, 12]],
     interiorTiles: [],
     coreTile: [13, 8],
+    northOpen: false,
   };
 
   var playerHp = 3;
@@ -538,13 +539,10 @@
         }
       }
       zone.map[13][12] = GRASS;
-      // Clear trees north to open a walkable path to caves
-      for (var ty = 0; ty <= 4; ty++) {
-        zone.map[ty][13] = PATH;
-        zone.map[ty][14] = PATH;
-      }
-      zone.map[0][13] = TRANSITION;
-      zone.map[0][14] = TRANSITION;
+      // Mark north path as passable (trees stay visually)
+      boss.northOpen = true;
+      zone.transitions.push({ x: 13, y: 0, zone: 'caves', spawnX: 10, spawnY: 13 });
+      zone.transitions.push({ x: 14, y: 0, zone: 'caves', spawnX: 11, spawnY: 13 });
       zone.transitions.push({ x: 13, y: 0, zone: 'caves', spawnX: 10, spawnY: 13 });
       zone.transitions.push({ x: 14, y: 0, zone: 'caves', spawnX: 11, spawnY: 13 });
 
@@ -565,6 +563,7 @@
     boss.projectiles = [];
     boss.attackTimer = 2000;
     boss.hitAnim = 0;
+    boss.northOpen = false;
     closeBossGate();
     playerHp = playerMaxHp;
     playerShield = false;
@@ -987,7 +986,8 @@
 
     var tile = tileAt(nx, ny);
     if (tile === -1) return;
-    if (isSolid(tile)) return;
+    var bossNorthPass = currentZone === 'boss' && boss.northOpen && nx >= 13 && nx <= 14 && ny >= 0 && ny <= 4;
+    if (isSolid(tile) && !bossNorthPass) return;
     if (npcAt(nx, ny)) return;
 
     player.moving = true;
