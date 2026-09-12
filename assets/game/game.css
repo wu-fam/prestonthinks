@@ -144,6 +144,15 @@
   max-width: 320px;
 }
 
+#game .intro-defeated {
+  color: #51cf66;
+  font-size: 0.85rem;
+}
+
+#game .boss-portrait.faded img {
+  opacity: 0.4;
+}
+
 /* ---------- Name input ---------- */
 
 #game .name-input {

@@ -1,0 +1,47 @@
+export const BOSSES = [
+  {
+    name: "Captain Bluff",
+    flavor: '"Every answer I give is correct. Would I lie to you?"',
+    storageKey: "boss-captain-bluff",
+    portrait: "/assets/game/liar-boss.svg",
+    mechanic: "bluff",
+    defeatLine: " has been defeated. No more lies!",
+    taunts: [
+      "This is definitely correct!",
+      "Trust me, I did the math.",
+      "Would I lie to you?",
+      "I'm 100% sure about this one.",
+      "Easy. Obviously right.",
+    ],
+  },
+  {
+    name: "Viking Orc",
+    flavor: "\"I'll break every number in half. Can you put them back together?\"",
+    storageKey: "boss-viking-orc",
+    portrait: "/assets/game/splitter-boss.svg",
+    mechanic: "factor",
+    defeatLine: " has been defeated. No more chopping!",
+    taunts: [
+      "Split this!",
+      "Too many pieces for you!",
+      "Can you even multiply?",
+      "This one is tricky...",
+      "CHOP CHOP!",
+    ],
+  },
+  {
+    name: "Wizard Snake",
+    flavor: '"My patterns are flawlesssss. You will never keep up."',
+    storageKey: "boss-wizard-snake",
+    portrait: "/assets/game/pattern-boss.svg",
+    mechanic: "pattern",
+    defeatLine: " has been defeated. Ssssequence broken!",
+    taunts: [
+      "Follow the pattern... if you can.",
+      "Sssso predictable.",
+      "My sequencesss are perfect.",
+      "You will never keep up!",
+      "What comesss next?",
+    ],
+  },
+];
