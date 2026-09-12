@@ -1119,7 +1119,7 @@
   }
 
   function drawBossCreature() {
-    if (boss.defeated) return;
+    if (boss.defeated || boss.gateOpen) return;
     var b = boss.bodyRect;
     var cx = (b.x + b.w / 2) * TILE;
     var cy = (b.y + 2) * TILE;
