@@ -357,7 +357,16 @@
   var playerHp = 3;
   var playerMaxHp = 3;
   var playerInvuln = 0;
+  var playerShield = false;
+  var playerSpeedTimer = 0;
   var PROJECTILE_SPEED = 120;
+
+  var collectibles = [];
+  var collectibleTimer = 0;
+  var COLLECTIBLE_INTERVAL = 4000;
+  var COLLECTIBLE_LIFETIME = 10000;
+  var MAX_COLLECTIBLES = 3;
+  var COLLECT_TYPES = ['heart', 'shield', 'speed'];
 
   // --- Helpers ---
 
@@ -551,12 +560,58 @@
     boss.hitAnim = 0;
     closeBossGate();
     playerHp = playerMaxHp;
+    playerShield = false;
+    playerSpeedTimer = 0;
+    collectibles = [];
+    collectibleTimer = 0;
     player.x = 13;
     player.y = 19;
     player.px = 13 * TILE;
     player.py = 19 * TILE;
     player.moving = false;
     player.facing = 'up';
+  }
+
+  function spawnCollectible() {
+    if (collectibles.length >= MAX_COLLECTIBLES) return;
+    var zone = ZONES.boss;
+    var attempts = 0;
+    while (attempts < 20) {
+      var rx = 3 + Math.floor(Math.random() * 22);
+      var ry = 3 + Math.floor(Math.random() * 16);
+      var t = zone.map[ry][rx];
+      if (t === GRASS || t === PATH) {
+        var occupied = false;
+        for (var i = 0; i < collectibles.length; i++) {
+          if (collectibles[i].x === rx && collectibles[i].y === ry) { occupied = true; break; }
+        }
+        if (!occupied) {
+          collectibles.push({
+            x: rx, y: ry,
+            type: COLLECT_TYPES[Math.floor(Math.random() * COLLECT_TYPES.length)],
+            born: performance.now(),
+          });
+          return;
+        }
+      }
+      attempts++;
+    }
+  }
+
+  function checkCollectiblePickup() {
+    for (var i = collectibles.length - 1; i >= 0; i--) {
+      var c = collectibles[i];
+      if (c.x === player.x && c.y === player.y) {
+        if (c.type === 'heart') {
+          if (playerHp < playerMaxHp) playerHp++;
+        } else if (c.type === 'shield') {
+          playerShield = true;
+        } else if (c.type === 'speed') {
+          playerSpeedTimer = 5000;
+        }
+        collectibles.splice(i, 1);
+      }
+    }
   }
 
   function spawnProjectiles() {
@@ -597,12 +652,31 @@
     if (dialog.active || puzzle.active) return;
 
     if (boss.hitAnim > 0) boss.hitAnim -= dt;
+    if (playerSpeedTimer > 0) playerSpeedTimer -= dt;
 
     boss.attackTimer -= dt;
     if (boss.attackTimer <= 0) {
       spawnProjectiles();
       boss.attackTimer = getAttackInterval();
     }
+
+    // Collectible spawning
+    collectibleTimer -= dt;
+    if (collectibleTimer <= 0) {
+      spawnCollectible();
+      collectibleTimer = COLLECTIBLE_INTERVAL;
+    }
+
+    // Expire old collectibles
+    var now = performance.now();
+    for (var ci = collectibles.length - 1; ci >= 0; ci--) {
+      if (now - collectibles[ci].born > COLLECTIBLE_LIFETIME) {
+        collectibles.splice(ci, 1);
+      }
+    }
+
+    // Check collectible pickup
+    checkCollectiblePickup();
 
     if (playerInvuln > 0) playerInvuln -= dt;
 
@@ -625,15 +699,21 @@
       var distX = p.x - pcx;
       var distY = p.y - pcy;
       if (Math.sqrt(distX * distX + distY * distY) < TILE * 0.6 && playerInvuln <= 0) {
-        playerHp--;
-        playerInvuln = 1000;
         boss.projectiles.splice(i, 1);
 
-        if (playerHp <= 0) {
-          dialog.active = true;
-          dialog.npc = { name: 'Defeated!', lines: ['The creature was too strong... Try again!'] };
-          dialog.lineIndex = 0;
-          setTimeout(resetBoss, 1000);
+        if (playerShield) {
+          playerShield = false;
+          playerInvuln = 500;
+        } else {
+          playerHp--;
+          playerInvuln = 1000;
+
+          if (playerHp <= 0) {
+            dialog.active = true;
+            dialog.npc = { name: 'Defeated!', lines: ['The creature was too strong... Try again!'] };
+            dialog.lineIndex = 0;
+            setTimeout(resetBoss, 1000);
+          }
         }
       }
     }
@@ -864,7 +944,8 @@
 
     if (player.moving) {
       player.moveProgress += dt;
-      var t = Math.min(player.moveProgress / MOVE_MS, 1);
+      var moveSpeed = (playerSpeedTimer > 0) ? MOVE_MS * 0.55 : MOVE_MS;
+      var t = Math.min(player.moveProgress / moveSpeed, 1);
       var ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
       player.px = player.startPx + (player.targetPx - player.startPx) * ease;
       player.py = player.startPy + (player.targetPy - player.startPy) * ease;
@@ -925,6 +1006,7 @@
     drawPlayer();
     drawInteractIndicator();
     if (currentZone === 'boss') {
+      drawCollectibles();
       drawBossCreature();
       drawProjectiles();
     }
@@ -1154,6 +1236,69 @@
     ctx.stroke();
   }
 
+  function drawCollectibles() {
+    var now = performance.now();
+    for (var i = 0; i < collectibles.length; i++) {
+      var c = collectibles[i];
+      var px = c.x * TILE;
+      var py = c.y * TILE;
+      var bob = Math.sin(now / 400 + i * 2) * 3;
+      var age = now - c.born;
+      var alpha = age > COLLECTIBLE_LIFETIME - 2000 ? 0.3 + Math.sin(now / 150) * 0.3 : 1;
+
+      ctx.globalAlpha = alpha;
+
+      // Glow
+      if (c.type === 'heart') ctx.fillStyle = 'rgba(255, 80, 80, 0.3)';
+      else if (c.type === 'shield') ctx.fillStyle = 'rgba(80, 140, 255, 0.3)';
+      else ctx.fillStyle = 'rgba(255, 220, 50, 0.3)';
+      ctx.beginPath();
+      ctx.arc(px + 16, py + 16 + bob, 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (c.type === 'heart') {
+        ctx.fillStyle = '#ff4444';
+        ctx.font = 'bold 20px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('♥', px + 16, py + 22 + bob);
+        ctx.textAlign = 'left';
+      } else if (c.type === 'shield') {
+        ctx.fillStyle = '#4488ff';
+        ctx.beginPath();
+        ctx.moveTo(px + 16, py + 6 + bob);
+        ctx.lineTo(px + 24, py + 12 + bob);
+        ctx.lineTo(px + 22, py + 24 + bob);
+        ctx.lineTo(px + 16, py + 28 + bob);
+        ctx.lineTo(px + 10, py + 24 + bob);
+        ctx.lineTo(px + 8, py + 12 + bob);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#66aaff';
+        ctx.beginPath();
+        ctx.moveTo(px + 16, py + 10 + bob);
+        ctx.lineTo(px + 21, py + 14 + bob);
+        ctx.lineTo(px + 20, py + 22 + bob);
+        ctx.lineTo(px + 16, py + 25 + bob);
+        ctx.lineTo(px + 12, py + 22 + bob);
+        ctx.lineTo(px + 11, py + 14 + bob);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.fillStyle = '#ffdd33';
+        ctx.fillRect(px + 8, py + 10 + bob, 16, 12);
+        ctx.fillStyle = '#ffaa00';
+        ctx.fillRect(px + 6, py + 18 + bob, 8, 6);
+        ctx.fillRect(px + 18, py + 18 + bob, 8, 6);
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(px + 16, py + 8 + bob, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = 1;
+    }
+  }
+
   function drawProjectiles() {
     for (var i = 0; i < boss.projectiles.length; i++) {
       var p = boss.projectiles[i];
@@ -1216,6 +1361,20 @@
     ctx.textAlign = 'center';
     ctx.fillText('FOREST GUARDIAN', VP_W / 2, barY - 6);
     ctx.textAlign = 'left';
+
+    // Status indicators next to hearts
+    var statusX = 10 + playerMaxHp * 28 + 8;
+    if (playerShield) {
+      ctx.fillStyle = '#4488ff';
+      ctx.font = 'bold 11px "Courier New", monospace';
+      ctx.fillText('SHIELD', statusX, 24);
+      statusX += 60;
+    }
+    if (playerSpeedTimer > 0) {
+      ctx.fillStyle = '#ffdd33';
+      ctx.font = 'bold 11px "Courier New", monospace';
+      ctx.fillText('SPEED', statusX, 24);
+    }
 
     // Invulnerability flash on player
     if (playerInvuln > 0 && Math.floor(performance.now() / 100) % 2 === 0) {
