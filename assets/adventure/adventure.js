@@ -168,7 +168,13 @@ function drawMap(ctx, env) {
 
       drawGround(ctx, px, py, type, theme);
       const tile = TILES[type];
-      if (tile && tile.draw) tile.draw(ctx, px, py, env);
+      if (tile && tile.draw) {
+        const inNorthPass = theme === "boss" && boss.defeated
+          && x >= 13 && x <= 14 && y >= 0 && y <= 4 && type === "tree";
+        if (inNorthPass) ctx.globalAlpha = 0.35;
+        tile.draw(ctx, px, py, env);
+        if (inNorthPass) ctx.globalAlpha = 1;
+      }
     }
   }
 }
