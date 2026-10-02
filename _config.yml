@@ -3,6 +3,7 @@ description: Math explainers and more
 theme: minima
 
 header_pages:
+  - math.html
   - game.html
   - adventure.html
   - about.md
