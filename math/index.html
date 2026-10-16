@@ -6,7 +6,8 @@ title: Math
 <h1>Math Explainers</h1>
 
 {% for video in site.data.videos %}
-<h2>{{ video.title }}</h2>
+{% assign num = forloop.index %}
+<h2><a href="{{ '/math/' | append: num | relative_url }}">{{ video.title }}</a></h2>
 <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin-bottom: 2em;">
   <iframe
     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
